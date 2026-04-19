@@ -37,7 +37,7 @@ export default function LoginPage() {
         <span className="brand-pill">Recovery Center</span>
         <div>
           <h1 className="brand-title" style={{ fontSize: 'clamp(2.8rem, 6vw, 5rem)', lineHeight: 0.94 }}>
-            A calmer command center for recovery data.
+            your day your data in one spot
           </h1>
           <p className="brand-copy" style={{ fontSize: '1.05rem', maxWidth: 560, marginTop: '1rem' }}>
             Track the protocol week by week, store every day inside that week, and keep symptoms,
