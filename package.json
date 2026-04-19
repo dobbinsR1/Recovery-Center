@@ -1,0 +1,38 @@
+{
+  "name": "recovery-center",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "docker:build": "docker build -t recovery-center:local .",
+    "docker:run": "docker rm -f recovery-center >/dev/null 2>&1 || true && docker run -d --name recovery-center -p 4173:80 recovery-center:local && echo 'Recovery Center is running at http://localhost:4173'",
+    "docker:stop": "docker rm -f recovery-center",
+    "docker": "npm run docker:build && npm run docker:run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.3",
+    "primeflex": "^4.0.0",
+    "primeicons": "^7.0.0",
+    "primereact": "^10.9.7",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.14.1",
+    "react-transition-group": "^4.4.5",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "vite": "^8.0.4"
+  }
+}
