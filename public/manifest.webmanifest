@@ -1,0 +1,17 @@
+{
+  "name": "Dobbins Recovery Center",
+  "short_name": "Recovery",
+  "description": "Recovery Center for Oura-informed recovery tracking, daily logging, and protocol monitoring.",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#f8f5ec",
+  "theme_color": "#177e72",
+  "icons": [
+    {
+      "src": "/recovery_center.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

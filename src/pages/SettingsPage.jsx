@@ -16,7 +16,7 @@ export default function SettingsPage() {
   const { snapshot, loading } = useRecoveryData()
 
   if (loading) {
-    return <div className="mono">Loading settings...</div>
+    return null
   }
 
   const exportJson = () => {

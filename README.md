@@ -7,6 +7,7 @@ Recovery Center is a React + Vite app for tracking a structured recovery protoco
 - Daily symptom logging
 - Nutrition and supplement tracking
 - Oura trend charts
+- Oura zip upload with table preview and Supabase save
 - History and export views
 
 ## Stack
@@ -51,6 +52,7 @@ Note:
 
 - `seed.sql` is sample application data.
 - In a live Supabase project, `profiles.id` should match a real user in `auth.users`.
+- Re-run `schema.sql` after pulling the latest changes so the Oura import tables are created.
 
 ### GitHub Actions configuration
 

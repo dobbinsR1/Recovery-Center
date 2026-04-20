@@ -19,7 +19,7 @@ export default function DailyLogPage() {
   const [saving, setSaving] = useState(false)
 
   if (loading) {
-    return <div className="mono">Loading daily log...</div>
+    return null
   }
 
   return (

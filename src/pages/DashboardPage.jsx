@@ -9,7 +9,7 @@ export default function DashboardPage() {
   const { snapshot, loading, activeWeek, activeDay, selectedLog } = useRecoveryData()
 
   if (loading) {
-    return <div className="mono">Loading dashboard snapshot...</div>
+    return null
   }
 
   if (!snapshot?.program) {
@@ -103,6 +103,9 @@ export default function DashboardPage() {
             </Link>
             <Link to="/insights">
               <Button label="Review Oura charts" icon="pi pi-chart-line" text fluid />
+            </Link>
+            <Link to="/oura-import">
+              <Button label="Import Oura export" icon="pi pi-upload" outlined fluid />
             </Link>
           </div>
         </Card>

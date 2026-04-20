@@ -75,6 +75,11 @@ function toAppMetric(row, tags = []) {
     hrv: row.hrv,
     restingHeartRate: row.resting_heart_rate,
     steps: row.steps,
+    sleepStartAt: row.sleep_start_at,
+    sleepEndAt: row.sleep_end_at,
+    heartRateSamples: row.heart_rate_samples ?? [],
+    stressSamples: row.stress_samples ?? [],
+    recoverySamples: row.recovery_samples ?? [],
     tags,
   }
 }

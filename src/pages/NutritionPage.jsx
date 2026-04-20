@@ -20,7 +20,7 @@ export default function NutritionPage() {
   const [saving, setSaving] = useState(false)
 
   if (loading) {
-    return <div className="mono">Loading nutrition view...</div>
+    return null
   }
 
   return (
