@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
 import { useAuth } from '../features/auth/AuthContext'
-import { importHistoricalData } from '../features/migration/migrationService'
+import { fixWeekNumbers, importHistoricalData } from '../features/migration/migrationService'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
 
 function downloadFile(filename, mimeType, content) {
@@ -22,6 +22,10 @@ export default function SettingsPage() {
   const [importResult, setImportResult] = useState(null)
   const [importError, setImportError] = useState(null)
 
+  const [fixStatus, setFixStatus] = useState('idle')
+  const [fixResult, setFixResult] = useState(null)
+  const [fixError, setFixError] = useState(null)
+
   const runImport = async () => {
     setImportStatus('running')
     setImportResult(null)
@@ -33,6 +37,20 @@ export default function SettingsPage() {
     } catch (err) {
       setImportError(err.message ?? 'Unknown error')
       setImportStatus('error')
+    }
+  }
+
+  const runFixWeeks = async () => {
+    setFixStatus('running')
+    setFixResult(null)
+    setFixError(null)
+    try {
+      const result = await fixWeekNumbers(user)
+      setFixResult(result)
+      setFixStatus('done')
+    } catch (err) {
+      setFixError(err.message ?? 'Unknown error')
+      setFixStatus('error')
     }
   }
 
@@ -130,6 +148,33 @@ export default function SettingsPage() {
           {importStatus === 'error' && (
             <p className="section-copy" style={{ color: 'var(--red-500)' }}>
               Error: {importError}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="card-title">Fix Week Numbers</h3>
+        <div className="section-stack">
+          <p className="section-copy">
+            Re-assigns any entries whose week number doesn't match their actual date. Run this if
+            entries appear in the wrong week after the historical import.
+          </p>
+          <Button
+            label={fixStatus === 'running' ? 'Fixing…' : 'Fix week numbers'}
+            icon={fixStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-sync'}
+            loading={fixStatus === 'running'}
+            onClick={runFixWeeks}
+          />
+          {fixStatus === 'done' && fixResult && (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              Done — {fixResult.fixed} {fixResult.fixed === 1 ? 'entry' : 'entries'} moved to the
+              correct week. Reload the page to see the changes.
+            </p>
+          )}
+          {fixStatus === 'error' && (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {fixError}
             </p>
           )}
         </div>

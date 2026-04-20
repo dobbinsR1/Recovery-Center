@@ -15,6 +15,58 @@ function addDays(isoDate, days) {
   return d.toISOString().slice(0, 10)
 }
 
+function weekNumberForDate(startDate, entryDate) {
+  const start = new Date(`${startDate}T12:00:00`)
+  const entry = new Date(`${entryDate}T12:00:00`)
+  const days = Math.floor((entry - start) / 86400000)
+  return Math.floor(days / 7) + 1
+}
+
+export async function fixWeekNumbers(user) {
+  const { data: programRow, error: programError } = await supabase
+    .from('recovery_programs')
+    .select('id, start_date')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (programError) throw programError
+  const { id: programId, start_date: startDate } = programRow
+
+  const { data: weekRows, error: weeksError } = await supabase
+    .from('recovery_weeks')
+    .select('id, week_number')
+    .eq('program_id', programId)
+
+  if (weeksError) throw weeksError
+  const weekIdByNumber = new Map(weekRows.map((w) => [w.week_number, w.id]))
+
+  const { data: entries, error: entriesError } = await supabase
+    .from('daily_entries')
+    .select('id, entry_date, week_number')
+    .eq('program_id', programId)
+
+  if (entriesError) throw entriesError
+
+  const toUpdate = entries.filter((e) => {
+    const correct = weekNumberForDate(startDate, e.entry_date)
+    return correct !== e.week_number && correct >= 1 && correct <= TOTAL_WEEKS
+  })
+
+  for (const entry of toUpdate) {
+    const correctWeek = weekNumberForDate(startDate, entry.entry_date)
+    const { error } = await supabase
+      .from('daily_entries')
+      .update({ week_number: correctWeek, week_id: weekIdByNumber.get(correctWeek) ?? null })
+      .eq('id', entry.id)
+    if (error) throw error
+  }
+
+  return { fixed: toUpdate.length }
+}
+
 export async function importHistoricalData(user) {
   // Step A: update program start_date
   const { error: updateError } = await supabase
