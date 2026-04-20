@@ -30,6 +30,7 @@ jobs:
           cache: npm
 
       - name: Configure GitHub Pages
+        id: pages
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
@@ -40,7 +41,7 @@ jobs:
           VITE_GITHUB_PAGES: 'true'
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
-        run: npm run build
+        run: npm run build -- --base="${{ steps.pages.outputs.base_path }}/"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
