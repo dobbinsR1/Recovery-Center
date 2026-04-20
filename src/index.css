@@ -466,8 +466,7 @@ textarea {
   }
 
   .login-context p,
-  .login-support,
-  .login-demo {
+  .login-support {
     display: none;
   }
 }

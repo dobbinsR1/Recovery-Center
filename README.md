@@ -4,7 +4,6 @@ Recovery Center is a React + Vite app for tracking a structured recovery protoco
 
 - Responsive desktop and mobile layouts
 - A login page with Supabase auth wiring
-- A demo workspace fallback when Supabase is not configured yet
 - Daily symptom logging
 - Nutrition and supplement tracking
 - Oura trend charts
@@ -34,8 +33,6 @@ npm run dev
 
 3. Open the app in your browser.
 
-If no Supabase environment variables are present, the app runs in seeded demo mode automatically.
-
 ## Supabase Setup
 
 Create a `.env` file from `.env.example` and add:
@@ -52,8 +49,27 @@ Then apply the SQL files in this order:
 
 Note:
 
-- `seed.sql` is meant for review/demo purposes.
+- `seed.sql` is sample application data.
 - In a live Supabase project, `profiles.id` should match a real user in `auth.users`.
+
+### GitHub Actions configuration
+
+For the GitHub Pages build, add these GitHub repository variables:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+If you later add a migration or database-admin workflow, store the Postgres password as a GitHub repository secret:
+
+- `SUPABASE_DB_PASSWORD`
+
+Then the connection string format would be:
+
+```text
+postgresql://postgres:${SUPABASE_DB_PASSWORD}@db.vbyeabiqfoytltwdhbsk.supabase.co:5432/postgres
+```
+
+Do not expose the raw database password to the frontend build. GitHub Pages only needs the public Supabase URL and anon key.
 
 ## Project Files
 

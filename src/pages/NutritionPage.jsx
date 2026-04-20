@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Message } from 'primereact/message'
 import { WeekDayPicker } from '../components/dashboard/WeekDayPicker'
 import { NutritionForm } from '../components/forms/NutritionForm'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
+import { useAppToast } from '../features/ui/ToastContext'
 
 export default function NutritionPage() {
   const {
@@ -16,8 +16,8 @@ export default function NutritionPage() {
     saveLog,
     createSupplement,
   } = useRecoveryData()
+  const { showError, showSuccess } = useAppToast()
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   if (loading) {
     return <div className="mono">Loading nutrition view...</div>
@@ -25,8 +25,6 @@ export default function NutritionPage() {
 
   return (
     <div className="section-stack">
-      {saved ? <Message severity="success" text="Nutrition saved." /> : null}
-
       <WeekDayPicker
         program={snapshot.program}
         activeWeek={activeWeek}
@@ -42,14 +40,30 @@ export default function NutritionPage() {
         activeWeek={activeWeek}
         activeDay={activeDay}
         saving={saving}
-        onCreateSupplement={createSupplement}
+        onCreateSupplement={async (name) => {
+          try {
+            await createSupplement(name)
+            showSuccess(
+              'Supplement added',
+              'The supplement catalog was updated in Supabase.',
+            )
+            return true
+          } catch (error) {
+            showError('Could not add supplement', error.message || 'The supplement could not be saved.')
+            return false
+          }
+        }}
         onSave={async (draft) => {
           setSaving(true)
-          setSaved(false)
 
           try {
             await saveLog(draft)
-            setSaved(true)
+            showSuccess(
+              'Nutrition saved',
+              'Nutrition and supplements were updated in Supabase.',
+            )
+          } catch (error) {
+            showError('Save failed', error.message || 'Nutrition could not be updated.')
           } finally {
             setSaving(false)
           }

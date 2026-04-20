@@ -128,7 +128,7 @@ Use one active recovery program with explicit week/day records:
 ### Phase 3. Database integration
 
 - Create Supabase tables and RLS policies
-- Create seed data for demo review
+- Create sample seed data for review
 - Build typed data service layer
 - Add program bootstrap logic for week/day generation
 
@@ -185,4 +185,4 @@ After approval of the schema and plan, the next practical move is:
 1. Scaffold the Vite app
 2. Install PrimeReact and Supabase
 3. Create the login page and protected shell
-4. Wire the app to the mock schema in `supabase/schema.sql`
+4. Wire the app to the Supabase schema in `supabase/schema.sql`

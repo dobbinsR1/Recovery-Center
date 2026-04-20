@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import {
   getInitialSession,
-  signInDemo,
+  signUpWithPassword,
   signInWithPassword,
   signOutCurrentUser,
   subscribeToAuthChanges,
@@ -40,8 +40,8 @@ export function AuthProvider({ children }) {
       user,
       loading,
       isSupabaseConfigured,
+      signUpWithPassword,
       signInWithPassword,
-      signInDemo,
       signOutCurrentUser,
     }),
     [user, loading],

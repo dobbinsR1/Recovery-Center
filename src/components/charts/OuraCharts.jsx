@@ -49,7 +49,7 @@ export function OuraCharts({ metrics, averages }) {
         <div className="page-header">
           <div>
             <h2>Oura import window</h2>
-            <p className="section-copy">The seeded demo keeps 35 days of readiness, sleep, HRV, and flagged events.</p>
+            <p className="section-copy">Review readiness, sleep, HRV, and flagged events across the imported date range.</p>
           </div>
           <Tag value={`${metrics.length} days`} severity="info" />
         </div>

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Message } from 'primereact/message'
 import { WeekDayPicker } from '../components/dashboard/WeekDayPicker'
 import { DailyLogForm } from '../components/forms/DailyLogForm'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
+import { useAppToast } from '../features/ui/ToastContext'
 
 export default function DailyLogPage() {
   const {
@@ -15,8 +15,8 @@ export default function DailyLogPage() {
     selectedLog,
     saveLog,
   } = useRecoveryData()
+  const { showError, showSuccess } = useAppToast()
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   if (loading) {
     return <div className="mono">Loading daily log...</div>
@@ -24,8 +24,6 @@ export default function DailyLogPage() {
 
   return (
     <div className="section-stack">
-      {saved ? <Message severity="success" text="Day log saved." /> : null}
-
       <WeekDayPicker
         program={snapshot.program}
         activeWeek={activeWeek}
@@ -43,11 +41,15 @@ export default function DailyLogPage() {
         saving={saving}
         onSave={async (draft) => {
           setSaving(true)
-          setSaved(false)
 
           try {
             await saveLog(draft)
-            setSaved(true)
+            showSuccess(
+              'Day log saved',
+              'The daily tracking record was updated in Supabase.',
+            )
+          } catch (error) {
+            showError('Save failed', error.message || 'The daily log could not be updated.')
           } finally {
             setSaving(false)
           }

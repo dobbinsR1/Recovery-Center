@@ -155,7 +155,8 @@ export function NutritionForm({
                 placeholder="Add a custom supplement"
                 onKeyDown={async (event) => {
                   if (event.key === 'Enter' && customSupplement.trim()) {
-                    await onCreateSupplement(customSupplement)
+                    const created = await onCreateSupplement(customSupplement)
+                    if (!created) return
                     setForm((current) => ({
                       ...current,
                       supplements: current.supplements.includes(customSupplement.trim())
@@ -173,7 +174,8 @@ export function NutritionForm({
               outlined
               onClick={async () => {
                 if (!customSupplement.trim()) return
-                await onCreateSupplement(customSupplement)
+                const created = await onCreateSupplement(customSupplement)
+                if (!created) return
                 setForm((current) => ({
                   ...current,
                   supplements: current.supplements.includes(customSupplement.trim())

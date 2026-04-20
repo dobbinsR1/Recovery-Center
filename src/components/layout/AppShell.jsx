@@ -52,14 +52,8 @@ export function AppShell({ children }) {
 
           <div className="support-panel">
             <div>
-              <p className="brand-pill">
-                {snapshot?.mode === 'supabase' ? 'Supabase live' : 'Demo workspace'}
-              </p>
-              <p className="support-copy">
-                {snapshot?.mode === 'supabase'
-                  ? 'Connected to your database tables and auth session.'
-                  : 'Running on seeded local data until Supabase env vars are configured.'}
-              </p>
+              <p className="brand-pill">Supabase live</p>
+              <p className="support-copy">Connected to your auth session and recovery tracking tables.</p>
             </div>
             <div>
               <strong>{user?.email}</strong>

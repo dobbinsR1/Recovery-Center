@@ -13,11 +13,69 @@ $$;
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text unique,
+  username text,
   full_name text,
   timezone text not null default 'America/Chicago',
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now())
 );
+
+alter table public.profiles add column if not exists username text;
+create unique index if not exists profiles_username_unique on public.profiles (username);
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (
+    id,
+    email,
+    username,
+    full_name
+  )
+  values (
+    new.id,
+    new.email,
+    lower(
+      coalesce(
+        nullif(trim(new.raw_user_meta_data ->> 'username'), ''),
+        split_part(coalesce(new.email, 'user'), '@', 1)
+      )
+    ),
+    nullif(trim(new.raw_user_meta_data ->> 'full_name'), '')
+  )
+  on conflict (id) do update
+  set
+    email = excluded.email,
+    username = coalesce(public.profiles.username, excluded.username),
+    full_name = coalesce(public.profiles.full_name, excluded.full_name);
+
+  return new;
+end;
+$$;
+
+create or replace function public.resolve_login_email(login_username text)
+returns text
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select email
+  from public.profiles
+  where username = lower(trim(login_username))
+  limit 1;
+$$;
+
+grant execute on function public.resolve_login_email(text) to anon, authenticated;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user();
 
 create table if not exists public.recovery_programs (
   id uuid primary key default gen_random_uuid(),
@@ -97,11 +155,9 @@ create table if not exists public.supplements (
   is_custom boolean not null default false,
   is_active boolean not null default true,
   created_at timestamptz not null default timezone('utc', now()),
-  updated_at timestamptz not null default timezone('utc', now())
+  updated_at timestamptz not null default timezone('utc', now()),
+  unique (user_id, name)
 );
-
-create unique index if not exists supplements_user_name_unique
-  on public.supplements (user_id, lower(name));
 
 create table if not exists public.daily_entry_supplements (
   daily_entry_id uuid not null references public.daily_entries(id) on delete cascade,
@@ -140,34 +196,42 @@ create table if not exists public.daily_tags (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+drop trigger if exists set_profiles_updated_at on public.profiles;
 create trigger set_profiles_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_recovery_programs_updated_at on public.recovery_programs;
 create trigger set_recovery_programs_updated_at
 before update on public.recovery_programs
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_recovery_weeks_updated_at on public.recovery_weeks;
 create trigger set_recovery_weeks_updated_at
 before update on public.recovery_weeks
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_daily_entries_updated_at on public.daily_entries;
 create trigger set_daily_entries_updated_at
 before update on public.daily_entries
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_daily_symptom_scores_updated_at on public.daily_symptom_scores;
 create trigger set_daily_symptom_scores_updated_at
 before update on public.daily_symptom_scores
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_supplements_updated_at on public.supplements;
 create trigger set_supplements_updated_at
 before update on public.supplements
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_oura_daily_metrics_updated_at on public.oura_daily_metrics;
 create trigger set_oura_daily_metrics_updated_at
 before update on public.oura_daily_metrics
 for each row execute function public.set_updated_at();
 
+drop trigger if exists set_daily_tags_updated_at on public.daily_tags;
 create trigger set_daily_tags_updated_at
 before update on public.daily_tags
 for each row execute function public.set_updated_at();
@@ -182,18 +246,21 @@ alter table public.daily_entry_supplements enable row level security;
 alter table public.oura_daily_metrics enable row level security;
 alter table public.daily_tags enable row level security;
 
+drop policy if exists "profiles are self-owned" on public.profiles;
 create policy "profiles are self-owned"
 on public.profiles
 for all
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
+drop policy if exists "programs are self-owned" on public.recovery_programs;
 create policy "programs are self-owned"
 on public.recovery_programs
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "weeks follow program ownership" on public.recovery_weeks;
 create policy "weeks follow program ownership"
 on public.recovery_weeks
 for all
@@ -214,12 +281,14 @@ with check (
   )
 );
 
+drop policy if exists "daily entries are self-owned" on public.daily_entries;
 create policy "daily entries are self-owned"
 on public.daily_entries
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "symptom scores follow entry ownership" on public.daily_symptom_scores;
 create policy "symptom scores follow entry ownership"
 on public.daily_symptom_scores
 for all
@@ -240,12 +309,14 @@ with check (
   )
 );
 
+drop policy if exists "supplements are self-owned" on public.supplements;
 create policy "supplements are self-owned"
 on public.supplements
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "entry supplements follow entry ownership" on public.daily_entry_supplements;
 create policy "entry supplements follow entry ownership"
 on public.daily_entry_supplements
 for all
@@ -266,12 +337,14 @@ with check (
   )
 );
 
+drop policy if exists "oura metrics are self-owned" on public.oura_daily_metrics;
 create policy "oura metrics are self-owned"
 on public.oura_daily_metrics
 for all
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
+drop policy if exists "daily tags are self-owned" on public.daily_tags;
 create policy "daily tags are self-owned"
 on public.daily_tags
 for all

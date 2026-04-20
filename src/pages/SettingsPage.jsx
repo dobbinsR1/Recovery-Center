@@ -1,6 +1,5 @@
 import { Card } from 'primereact/card'
 import { Button } from 'primereact/button'
-import { Message } from 'primereact/message'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
 
 function downloadFile(filename, mimeType, content) {
@@ -83,17 +82,10 @@ export default function SettingsPage() {
         <div className="page-header">
           <div>
             <h2>Settings and handoff</h2>
-            <p className="section-copy">This page makes the current build easy to inspect before live Supabase rollout.</p>
+            <p className="section-copy">Export recovery data and review the project files behind the live Supabase build.</p>
           </div>
         </div>
       </Card>
-
-      {snapshot.mode !== 'supabase' ? (
-        <Message
-          severity="info"
-          text="The app is currently running in demo mode. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to switch auth and data loading over to Supabase."
-        />
-      ) : null}
 
       <div className="grid-two">
         <Card>

@@ -2,30 +2,56 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
-import { Divider } from 'primereact/divider'
 import { InputText } from 'primereact/inputtext'
-import { Message } from 'primereact/message'
 import { Password } from 'primereact/password'
 import { useAuth } from '../features/auth/AuthContext'
+import { useAppToast } from '../features/ui/ToastContext'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { isSupabaseConfigured, signInWithPassword } = useAuth()
+  const { isSupabaseConfigured, signInWithPassword, signUpWithPassword } = useAuth()
+  const { showError, showSuccess } = useAppToast()
+  const [mode, setMode] = useState('signin')
+  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setLoading(true)
-    setError('')
 
     try {
-      await signInWithPassword({ identifier, password })
-      navigate('/', { replace: true })
+      if (isSupabaseConfigured && mode === 'signup') {
+        const data = await signUpWithPassword({
+          username,
+          email,
+          password,
+          fullName,
+        })
+
+        if (data.session) {
+          showSuccess('Account created', 'Your Recovery Center account is ready.')
+          navigate('/', { replace: true })
+        } else {
+          showSuccess(
+            'Account created',
+            'Check your email if confirmation is required, then sign in.',
+            4200,
+          )
+          setMode('signin')
+          setIdentifier(email)
+          setPassword('')
+        }
+      } else {
+        await signInWithPassword({ identifier, password })
+        showSuccess('Signed in', 'Login validation succeeded.')
+        navigate('/', { replace: true })
+      }
     } catch (submitError) {
-      setError(submitError.message || 'Unable to sign in.')
+      showError('Login failed', submitError.message || 'Unable to sign in.')
     } finally {
       setLoading(false)
     }
@@ -63,8 +89,8 @@ export default function LoginPage() {
           <div className="login-point">
             <i className="pi pi-database text-xl" />
             <div>
-              <strong>Supabase ready</strong>
-              <span className="section-copy">Runs with mock data now and switches to Supabase when env vars are added.</span>
+              <strong>Supabase backed</strong>
+              <span className="section-copy">Authentication and recovery tracking write directly to your Supabase project.</span>
             </div>
           </div>
         </div>
@@ -77,30 +103,76 @@ export default function LoginPage() {
               <h2 className="card-title">Sign in</h2>
               <p className="section-copy">
                 {isSupabaseConfigured
-                  ? 'Use your Supabase auth credentials or switch to the seeded demo workspace.'
-                  : 'Supabase is not configured yet, so the app will open in seeded demo mode by default.'}
+                  ? 'Use Supabase Auth for password login. Recovery Center stores your username and tracking data in Supabase.'
+                  : 'Add your Supabase URL and anon key to enable authentication.'}
               </p>
             </div>
 
-            {error ? <Message className="login-support" severity="error" text={error} /> : null}
-            {!isSupabaseConfigured ? (
-              <Message
-                className="login-support"
-                severity="info"
-                text="Demo mode is active. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable live auth."
-              />
-            ) : null}
+            <div className="week-strip">
+              <button
+                type="button"
+                className={`week-button ${mode === 'signin' ? 'active' : ''}`}
+                onClick={() => {
+                  setMode('signin')
+                }}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                className={`week-button ${mode === 'signup' ? 'active' : ''}`}
+                onClick={() => {
+                  setMode('signup')
+                }}
+              >
+                Create account
+              </button>
+            </div>
 
             <form onSubmit={handleSubmit} className="section-stack">
-              <span className="p-float-label">
-                <InputText
-                  id="identifier"
-                  value={identifier}
-                  onChange={(event) => setIdentifier(event.target.value)}
-                  className="w-full"
-                />
-                <label htmlFor="identifier">{isSupabaseConfigured ? 'Email' : 'Username'}</label>
-              </span>
+              {mode === 'signup' ? (
+                <>
+                  <span className="p-float-label">
+                    <InputText
+                      id="username"
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value.toLowerCase())}
+                      className="w-full"
+                    />
+                    <label htmlFor="username">Username</label>
+                  </span>
+
+                  <span className="p-float-label">
+                    <InputText
+                      id="fullName"
+                      value={fullName}
+                      onChange={(event) => setFullName(event.target.value)}
+                      className="w-full"
+                    />
+                    <label htmlFor="fullName">Full name</label>
+                  </span>
+
+                  <span className="p-float-label">
+                    <InputText
+                      id="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className="w-full"
+                    />
+                    <label htmlFor="email">Email</label>
+                  </span>
+                </>
+              ) : (
+                <span className="p-float-label">
+                  <InputText
+                    id="identifier"
+                    value={identifier}
+                    onChange={(event) => setIdentifier(event.target.value)}
+                    className="w-full"
+                  />
+                  <label htmlFor="identifier">Email or username</label>
+                </span>
+              )}
 
               <span className="p-float-label">
                 <Password
@@ -115,14 +187,21 @@ export default function LoginPage() {
                 <label htmlFor="password">Password</label>
               </span>
 
-              <Button type="submit" label={loading ? 'Signing in...' : 'Sign in'} loading={loading} />
+              <Button
+                type="submit"
+                label={
+                  loading
+                    ? mode === 'signup'
+                      ? 'Creating account...'
+                      : 'Signing in...'
+                    : mode === 'signup'
+                      ? 'Create account'
+                      : 'Sign in'
+                }
+                loading={loading}
+                disabled={!isSupabaseConfigured}
+              />
             </form>
-
-            <div className="login-demo">
-              <Divider align="center">
-                <span className="mono">demo mode</span>
-              </Divider>
-            </div>
           </div>
         </Card>
       </section>
