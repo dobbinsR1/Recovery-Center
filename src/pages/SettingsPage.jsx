@@ -1,5 +1,8 @@
-import { Card } from 'primereact/card'
+import { useState } from 'react'
 import { Button } from 'primereact/button'
+import { Card } from 'primereact/card'
+import { useAuth } from '../features/auth/AuthContext'
+import { importHistoricalData } from '../features/migration/migrationService'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
 
 function downloadFile(filename, mimeType, content) {
@@ -14,6 +17,24 @@ function downloadFile(filename, mimeType, content) {
 
 export default function SettingsPage() {
   const { snapshot, loading } = useRecoveryData()
+  const { user } = useAuth()
+  const [importStatus, setImportStatus] = useState('idle')
+  const [importResult, setImportResult] = useState(null)
+  const [importError, setImportError] = useState(null)
+
+  const runImport = async () => {
+    setImportStatus('running')
+    setImportResult(null)
+    setImportError(null)
+    try {
+      const result = await importHistoricalData(user)
+      setImportResult(result)
+      setImportStatus('done')
+    } catch (err) {
+      setImportError(err.message ?? 'Unknown error')
+      setImportStatus('error')
+    }
+  }
 
   if (loading) {
     return null
@@ -84,6 +105,33 @@ export default function SettingsPage() {
             <h2>Settings and handoff</h2>
             <p className="section-copy">Export recovery data and review the project files behind the live Supabase build.</p>
           </div>
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="card-title">Import Historical Data</h3>
+        <div className="section-stack">
+          <p className="section-copy">
+            Imports your Mar 3 – Apr 6 Oura data and Week 1 symptom logs from the original protocol,
+            and resets the program start date to March 1, 2026. Safe to run multiple times.
+          </p>
+          <Button
+            label={importStatus === 'running' ? 'Importing…' : 'Import historical data'}
+            icon={importStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-upload'}
+            loading={importStatus === 'running'}
+            onClick={runImport}
+          />
+          {importStatus === 'done' && importResult && (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              Done — {importResult.ouraCount} Oura days, {importResult.tagCount} tags,{' '}
+              {importResult.logCount} symptom logs imported. Reload the page to see updated data.
+            </p>
+          )}
+          {importStatus === 'error' && (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {importError}
+            </p>
+          )}
         </div>
       </Card>
 
