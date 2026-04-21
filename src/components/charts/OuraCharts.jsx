@@ -182,36 +182,27 @@ function EmptyInsightsState() {
 }
 
 export function OuraCharts({ metrics, averages }) {
-  const intradayMetrics = useMemo(
+  const dayOptions = useMemo(
     () =>
       [...metrics]
-        .filter(hasIntradayData)
-        .sort((left, right) => right.metricDate.localeCompare(left.metricDate)),
-    [metrics],
-  )
-  const intradayOptions = useMemo(
-    () =>
-      (intradayMetrics.length ? intradayMetrics : [...metrics].sort((left, right) => right.metricDate.localeCompare(left.metricDate)))
+        .sort((left, right) => right.metricDate.localeCompare(left.metricDate))
         .map((metric) => ({
           label: formatShortDate(metric.metricDate),
           value: metric.metricDate,
         })),
-    [intradayMetrics, metrics],
+    [metrics],
   )
-  const [selectedMetricDate, setSelectedMetricDate] = useState(intradayOptions[0]?.value ?? null)
+  const [selectedMetricDate, setSelectedMetricDate] = useState(dayOptions[0]?.value ?? null)
 
   useEffect(() => {
-    if (!intradayOptions.some((option) => option.value === selectedMetricDate)) {
-      setSelectedMetricDate(intradayOptions[0]?.value ?? null)
+    if (!dayOptions.some((option) => option.value === selectedMetricDate)) {
+      setSelectedMetricDate(dayOptions[0]?.value ?? null)
     }
-  }, [intradayOptions, selectedMetricDate])
+  }, [dayOptions, selectedMetricDate])
 
-  const selectedIntradayMetric =
-    intradayMetrics.find((metric) => metric.metricDate === selectedMetricDate) ??
-    metrics.find((metric) => metric.metricDate === selectedMetricDate) ??
-    intradayMetrics[0] ??
-    metrics.at(-1)
-  const intradayChartData = buildIntradayChartData(selectedIntradayMetric)
+  const selectedDayMetric =
+    metrics.find((metric) => metric.metricDate === selectedMetricDate) ?? metrics.at(-1)
+  const intradayChartData = buildIntradayChartData(selectedDayMetric)
   if (!metrics.length) {
     return <EmptyInsightsState />
   }
@@ -350,33 +341,63 @@ export function OuraCharts({ metrics, averages }) {
       <Card className="chart-card">
         <div className="page-header">
           <div>
-            <h3 className="card-title">Time-based day view</h3>
+            <h3 className="card-title">Day view</h3>
             <p className="section-copy">
-              View heart rate, stress, recovery, and sleep timing for a single Oura day pulled back from Supabase.
+              Pick any day to see its scores and hourly heart rate, stress, and recovery lines.
             </p>
           </div>
           <Dropdown
             value={selectedMetricDate}
-            options={intradayOptions}
+            options={dayOptions}
             onChange={(event) => setSelectedMetricDate(event.value)}
             className="oura-day-picker"
           />
         </div>
 
-        <div className="grid-two mt-4">
+        <div className="kpi-grid mt-4">
+          <div className="kpi-card">
+            <span className="kpi-label">Readiness</span>
+            <span className="kpi-value">{selectedDayMetric?.readinessScore ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Sleep score</span>
+            <span className="kpi-value">{selectedDayMetric?.sleepScore ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">HRV</span>
+            <span className="kpi-value">{selectedDayMetric?.hrv ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Resting HR</span>
+            <span className="kpi-value">{selectedDayMetric?.restingHeartRate ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Sleep</span>
+            <span className="kpi-value">
+              {selectedDayMetric?.totalSleepMinutes
+                ? `${Number((selectedDayMetric.totalSleepMinutes / 60).toFixed(1))}h`
+                : '--'}
+            </span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Steps</span>
+            <span className="kpi-value">
+              {selectedDayMetric?.steps != null ? selectedDayMetric.steps.toLocaleString() : '--'}
+            </span>
+          </div>
           <div className="kpi-card">
             <span className="kpi-label">Sleep start</span>
             <span className="kpi-value">
-              {selectedIntradayMetric?.sleepStartAt
-                ? new Date(selectedIntradayMetric.sleepStartAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              {selectedDayMetric?.sleepStartAt
+                ? new Date(selectedDayMetric.sleepStartAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
                 : '--'}
             </span>
           </div>
           <div className="kpi-card">
             <span className="kpi-label">Sleep end</span>
             <span className="kpi-value">
-              {selectedIntradayMetric?.sleepEndAt
-                ? new Date(selectedIntradayMetric.sleepEndAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              {selectedDayMetric?.sleepEndAt
+                ? new Date(selectedDayMetric.sleepEndAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
                 : '--'}
             </span>
           </div>
@@ -397,7 +418,10 @@ export function OuraCharts({ metrics, averages }) {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="section-copy mt-4">No time-based Oura samples were synced for this day yet.</p>
+          <p className="section-copy mt-4">
+            Hourly data not available for this day. To add heart rate, stress, and recovery lines,
+            run the Supabase column migration then re-import your Oura zip.
+          </p>
         )}
       </Card>
 
