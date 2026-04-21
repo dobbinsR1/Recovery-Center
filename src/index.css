@@ -1,27 +1,66 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  --rc-bg: #f8f5ec;
-  --rc-surface: rgba(255, 255, 255, 0.82);
-  --rc-surface-strong: #fffef8;
-  --rc-ink: #1f2a24;
-  --rc-muted: #65736c;
-  --rc-border: rgba(72, 95, 83, 0.14);
+
+  /* Background layers */
+  --rc-bg: #0b1929;
+  --rc-surface: rgba(14, 28, 48, 0.88);
+  --rc-surface-strong: #112035;
+
+  /* Text */
+  --rc-ink: #e8f0f7;
+  --rc-muted: #7a94aa;
+
+  /* Borders & shadow */
+  --rc-border: rgba(255, 255, 255, 0.09);
+  --rc-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+
+  /* Brand accent colors (used in charts and highlights) */
   --rc-teal: #177e72;
-  --rc-teal-soft: rgba(23, 126, 114, 0.14);
+  --rc-teal-soft: rgba(23, 126, 114, 0.22);
   --rc-coral: #d56c47;
-  --rc-coral-soft: rgba(213, 108, 71, 0.14);
+  --rc-coral-soft: rgba(213, 108, 71, 0.2);
   --rc-gold: #d3a63f;
-  --rc-gold-soft: rgba(211, 166, 63, 0.16);
-  --rc-shadow: 0 18px 45px rgba(31, 42, 36, 0.08);
+  --rc-gold-soft: rgba(211, 166, 63, 0.2);
+
   --rc-sidebar-width: 272px;
 }
 
+/* ── Per-tab accent colors ─────────────────────────────────────────────────
+   Assigned by position so no JSX changes are needed.
+   Colors are intentionally distinct from chart line colors
+   (teal #177e72 · coral #d56c47 · gold #d3a63f).
+   1 Overview  – sky blue
+   2 Daily log – soft red
+   3 Nutrition – emerald green
+   4 Insights  – bright yellow
+   5 History   – warm orange
+   6 Settings  – lavender
+──────────────────────────────────────────────────────────────────────────── */
+.sidebar-nav .sidebar-link:nth-child(1),
+.mobile-nav a:nth-child(1) { --tab-color: #60a5fa; }
+
+.sidebar-nav .sidebar-link:nth-child(2),
+.mobile-nav a:nth-child(2) { --tab-color: #f87171; }
+
+.sidebar-nav .sidebar-link:nth-child(3),
+.mobile-nav a:nth-child(3) { --tab-color: #4ade80; }
+
+.sidebar-nav .sidebar-link:nth-child(4),
+.mobile-nav a:nth-child(4) { --tab-color: #fde047; }
+
+.sidebar-nav .sidebar-link:nth-child(5),
+.mobile-nav a:nth-child(5) { --tab-color: #fb923c; }
+
+.sidebar-nav .sidebar-link:nth-child(6),
+.mobile-nav a:nth-child(6) { --tab-color: #c084fc; }
+
+/* ── Reset ────────────────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
 }
@@ -36,10 +75,8 @@ body {
   margin: 0;
   font-family: 'Space Grotesk', sans-serif;
   color: var(--rc-ink);
-  background:
-    radial-gradient(circle at top left, rgba(23, 126, 114, 0.12), transparent 28%),
-    radial-gradient(circle at top right, rgba(213, 108, 71, 0.12), transparent 32%),
-    linear-gradient(180deg, #fbf8ef 0%, #f8f5ec 52%, #f3efe3 100%);
+  background: linear-gradient(160deg, #0b1929 0%, #0e2138 52%, #091524 100%);
+  background-attachment: fixed;
 }
 
 a {
@@ -53,6 +90,7 @@ textarea {
   font: inherit;
 }
 
+/* ── App shell ───────────────────────────────────────────────────────────── */
 .app-shell {
   min-height: 100vh;
 }
@@ -68,11 +106,12 @@ textarea {
   top: 0;
   height: 100vh;
   padding: 1.5rem;
-  background: rgba(250, 247, 238, 0.78);
+  background: rgba(7, 15, 28, 0.92);
   backdrop-filter: blur(18px);
   border-right: 1px solid var(--rc-border);
 }
 
+/* ── Brand ──────────────────────────────────────────────────────────────── */
 .brand-lockup {
   display: grid;
   gap: 0.75rem;
@@ -84,7 +123,7 @@ textarea {
   padding: 0.35rem 0.7rem;
   border-radius: 999px;
   background: var(--rc-teal-soft);
-  color: var(--rc-teal);
+  color: #5ecfc3;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 0.75rem;
   font-weight: 600;
@@ -95,6 +134,7 @@ textarea {
   margin: 0;
   font-size: 1.8rem;
   line-height: 1;
+  color: var(--rc-ink);
 }
 
 .brand-copy,
@@ -105,6 +145,7 @@ textarea {
   line-height: 1.5;
 }
 
+/* ── Sidebar nav ─────────────────────────────────────────────────────────── */
 .sidebar-nav {
   display: grid;
   gap: 0.55rem;
@@ -121,11 +162,17 @@ textarea {
   transition: all 180ms ease;
 }
 
-.sidebar-link:hover,
+.sidebar-link:hover {
+  color: var(--tab-color, var(--rc-teal));
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
 .sidebar-link.active {
-  color: var(--rc-ink);
-  background: var(--rc-surface-strong);
-  box-shadow: var(--rc-shadow);
+  color: #fff;
+  background: var(--tab-color, var(--rc-teal));
+  border-color: transparent;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
 }
 
 .sidebar-link span:last-child {
@@ -133,6 +180,7 @@ textarea {
   font-size: 0.78rem;
 }
 
+/* ── Main content ─────────────────────────────────────────────────────────── */
 .app-main {
   padding: 1.5rem;
 }
@@ -149,6 +197,7 @@ textarea {
   margin: 0;
   font-size: clamp(2rem, 2.4vw, 2.8rem);
   letter-spacing: -0.05em;
+  color: var(--rc-ink);
 }
 
 .topbar-meta {
@@ -158,6 +207,7 @@ textarea {
   margin-top: 0.75rem;
 }
 
+/* ── Layout grids ────────────────────────────────────────────────────────── */
 .page-grid {
   display: grid;
   gap: 1rem;
@@ -175,6 +225,7 @@ textarea {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* ── Cards & panels ──────────────────────────────────────────────────────── */
 .hero-panel {
   position: relative;
   overflow: hidden;
@@ -182,7 +233,7 @@ textarea {
   border-radius: 1.75rem;
   padding: 1.4rem;
   background:
-    linear-gradient(135deg, rgba(23, 126, 114, 0.14), rgba(255, 255, 255, 0.65)),
+    linear-gradient(135deg, rgba(23, 126, 114, 0.18), rgba(14, 28, 48, 0.7)),
     var(--rc-surface);
   box-shadow: var(--rc-shadow);
 }
@@ -194,8 +245,8 @@ textarea {
   width: 180px;
   height: 180px;
   border-radius: 50%;
-  background: rgba(213, 108, 71, 0.15);
-  filter: blur(10px);
+  background: rgba(213, 108, 71, 0.12);
+  filter: blur(12px);
 }
 
 .kpi-grid {
@@ -209,8 +260,8 @@ textarea {
   gap: 0.2rem;
   padding: 1rem;
   border-radius: 1.2rem;
-  background: var(--rc-surface-strong);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--rc-border);
 }
 
 .kpi-label {
@@ -225,12 +276,15 @@ textarea {
   font-size: 1.8rem;
   font-weight: 700;
   letter-spacing: -0.05em;
+  color: var(--rc-ink);
 }
 
+/* ── Typography ──────────────────────────────────────────────────────────── */
 .mono {
   font-family: 'IBM Plex Mono', monospace;
 }
 
+/* ── Week/day pickers ────────────────────────────────────────────────────── */
 .week-strip,
 .day-strip,
 .chip-grid {
@@ -242,7 +296,7 @@ textarea {
 .week-button,
 .day-button {
   border: 1px solid var(--rc-border);
-  background: var(--rc-surface-strong);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--rc-muted);
   border-radius: 1rem;
   padding: 0.72rem 0.95rem;
@@ -260,6 +314,7 @@ textarea {
 .week-button:hover,
 .day-button:hover {
   transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .day-button {
@@ -267,6 +322,7 @@ textarea {
   text-align: center;
 }
 
+/* ── Page header ─────────────────────────────────────────────────────────── */
 .page-header {
   display: flex;
   align-items: flex-start;
@@ -277,13 +333,16 @@ textarea {
 .page-header h2 {
   margin: 0;
   font-size: 1.5rem;
+  color: var(--rc-ink);
 }
 
 .card-title {
   margin: 0 0 0.35rem;
   font-size: 1.1rem;
+  color: var(--rc-ink);
 }
 
+/* ── Metric line ─────────────────────────────────────────────────────────── */
 .metric-line {
   display: flex;
   align-items: center;
@@ -291,23 +350,26 @@ textarea {
   gap: 1rem;
 }
 
+/* ── Supplement chips ────────────────────────────────────────────────────── */
 .supplement-chip {
   display: inline-flex;
   align-items: center;
   padding: 0.5rem 0.85rem;
   border-radius: 999px;
   border: 1px solid var(--rc-border);
-  background: var(--rc-surface-strong);
+  background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
   transition: all 160ms ease;
+  color: var(--rc-muted);
 }
 
 .supplement-chip.active {
-  color: var(--rc-teal);
-  border-color: rgba(23, 126, 114, 0.28);
-  background: rgba(23, 126, 114, 0.12);
+  color: #5ecfc3;
+  border-color: rgba(23, 126, 114, 0.35);
+  background: rgba(23, 126, 114, 0.16);
 }
 
+/* ── Support panel ───────────────────────────────────────────────────────── */
 .support-panel {
   display: grid;
   gap: 0.85rem;
@@ -315,9 +377,37 @@ textarea {
   padding: 1rem;
   border-radius: 1.3rem;
   border: 1px solid var(--rc-border);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.04);
 }
 
+/* ── History card ────────────────────────────────────────────────────────── */
+.history-card {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--rc-border);
+}
+
+/* ── Chart card ──────────────────────────────────────────────────────────── */
+.chart-card {
+  min-height: 320px;
+}
+
+/* ── Section stack ───────────────────────────────────────────────────────── */
+.section-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+/* ── Footer note ─────────────────────────────────────────────────────────── */
+.footer-note {
+  color: var(--rc-muted);
+  font-size: 0.92rem;
+}
+
+/* ── Mobile nav ──────────────────────────────────────────────────────────── */
 .mobile-nav {
   display: none;
 }
@@ -326,6 +416,7 @@ textarea {
   display: none;
 }
 
+/* ── Login page ──────────────────────────────────────────────────────────── */
 .login-shell {
   min-height: 100vh;
   display: grid;
@@ -338,15 +429,16 @@ textarea {
   align-content: center;
   gap: 1.5rem;
   background:
-    radial-gradient(circle at 20% 20%, rgba(23, 126, 114, 0.18), transparent 24%),
-    radial-gradient(circle at 75% 25%, rgba(213, 108, 71, 0.18), transparent 26%),
-    linear-gradient(160deg, #f2eee0 0%, #f8f5ec 55%, #fffaf1 100%);
+    radial-gradient(circle at 20% 20%, rgba(23, 126, 114, 0.22), transparent 28%),
+    radial-gradient(circle at 75% 25%, rgba(213, 108, 71, 0.18), transparent 30%),
+    linear-gradient(160deg, #0d2035 0%, #0b1929 60%, #0a1520 100%);
 }
 
 .login-card-wrap {
   display: grid;
   place-items: center;
   padding: 2rem;
+  background: rgba(7, 15, 28, 0.7);
 }
 
 .login-card {
@@ -364,37 +456,16 @@ textarea {
   align-items: flex-start;
   padding: 0.85rem 1rem;
   border-radius: 1.1rem;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(72, 95, 83, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: var(--rc-ink);
 }
 
 .login-point strong {
   display: block;
 }
 
-.history-card {
-  display: grid;
-  gap: 0.35rem;
-  padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.62);
-  border: 1px solid var(--rc-border);
-}
-
-.chart-card {
-  min-height: 320px;
-}
-
-.section-stack {
-  display: grid;
-  gap: 1rem;
-}
-
-.footer-note {
-  color: var(--rc-muted);
-  font-size: 0.92rem;
-}
-
+/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 1120px) {
   .app-layout {
     grid-template-columns: 1fr;
@@ -416,7 +487,7 @@ textarea {
     grid-template-columns: repeat(6, 1fr);
     gap: 0.3rem;
     padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
-    background: rgba(255, 254, 248, 0.94);
+    background: rgba(7, 15, 28, 0.96);
     backdrop-filter: blur(18px);
     border-top: 1px solid var(--rc-border);
   }
@@ -427,10 +498,11 @@ textarea {
     gap: 0.18rem;
     font-size: 0.74rem;
     color: var(--rc-muted);
+    transition: color 160ms ease;
   }
 
   .mobile-nav a.active {
-    color: var(--rc-teal);
+    color: var(--tab-color, var(--rc-teal));
   }
 
   .mobile-page-actions {
@@ -459,6 +531,7 @@ textarea {
   .login-card-wrap {
     min-height: 100vh;
     padding: 1rem;
+    background: var(--rc-bg);
   }
 
   .login-card {
