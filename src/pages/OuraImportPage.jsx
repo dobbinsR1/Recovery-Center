@@ -2,14 +2,13 @@ import { useRef, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
 import { Chip } from 'primereact/chip'
-import { Column } from 'primereact/column'
-import { DataTable } from 'primereact/datatable'
-import { Dialog } from 'primereact/dialog'
 import { ProgressBar } from 'primereact/progressbar'
 import { ProgressSpinner } from 'primereact/progressspinner'
 import { Tag } from 'primereact/tag'
+import { OuraCharts } from '../components/charts/OuraCharts'
 import { useAuth } from '../features/auth/AuthContext'
 import { saveOuraImportBundle } from '../features/oura-import/data/ouraImportRepository'
+import { buildPreviewMetrics } from '../features/oura-import/lib/ouraImportTransforms'
 import { parseOuraZip } from '../features/oura-import/services/ouraZipService'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
 import { useAppToast } from '../features/ui/ToastContext'
@@ -42,7 +41,7 @@ async function finishProgressCountdown(startedAt, setParseState) {
     setParseState((current) => ({
       ...current,
       percent: Math.min(100, Math.max(current.percent, Math.round(94 + ((6 * step) / steps)))),
-      stage: 'Finalizing preview tables',
+      stage: 'Finalizing charts',
     }))
   }
 }
@@ -61,18 +60,13 @@ export default function OuraImportPage() {
     totalTables: 0,
   })
   const [importBundle, setImportBundle] = useState(null)
-  const [activeIndex, setActiveIndex] = useState(0)
   const [saving, setSaving] = useState(false)
-  const [expandedCell, setExpandedCell] = useState(null)
   const [dragActive, setDragActive] = useState(false)
-
-  const activeTable = importBundle?.tables?.[activeIndex] ?? null
 
   const startImport = async (file) => {
     const startedAt = Date.now()
 
     setImportBundle(null)
-    setActiveIndex(0)
     setParseState({
       parsing: true,
       percent: 0,
@@ -101,7 +95,7 @@ export default function OuraImportPage() {
       }))
       showSuccess(
         'Oura export converted',
-        `Prepared ${parsedBundle.tableCount} tables and ${parsedBundle.rowCount.toLocaleString()} rows for review.`,
+        `Ready to preview — ${parsedBundle.derivedMetricCount} metric days and ${parsedBundle.derivedTagCount} tags.`,
         3800,
       )
     } catch (error) {
@@ -115,47 +109,6 @@ export default function OuraImportPage() {
       })
       showError('Conversion failed', error.message || 'The zip file could not be converted.')
     }
-  }
-
-  const renderCellBody = (rowData, columnName) => {
-    const rawValue = rowData[columnName]
-
-    if (rawValue == null || rawValue === '') {
-      return <span className="import-cell-empty">--</span>
-    }
-
-    const value = String(rawValue)
-    const isLong = value.length > 96 || value.includes('{"') || value.includes('["') || value.includes('1111111111')
-
-    if (!isLong) {
-      return (
-        <span className="import-cell-value" title={value}>
-          {value}
-        </span>
-      )
-    }
-
-    return (
-      <div className="import-cell-expandable">
-        <span className="import-cell-preview" title={value}>
-          {value.slice(0, 88)}...
-        </span>
-        <Button
-          type="button"
-          label="See more"
-          text
-          size="small"
-          className="import-cell-button"
-          onClick={() =>
-            setExpandedCell({
-              columnName,
-              rowId: rowData.__rowId,
-              value,
-            })
-          }
-        />
-      </div>
-    )
   }
 
   const handleFileSelection = async (event) => {
@@ -185,6 +138,8 @@ export default function OuraImportPage() {
     }
   }
 
+  const previewData = importBundle ? buildPreviewMetrics(importBundle.tables) : null
+
   return (
     <div className="section-stack">
       <Card className="hero-panel">
@@ -192,11 +147,11 @@ export default function OuraImportPage() {
           <div>
             <h2>Oura zip import</h2>
             <p className="section-copy">
-              Upload an Oura export zip, convert every CSV into sortable preview tables, review them one by one, then
-              save the batch into Supabase.
+              Upload an Oura export zip to instantly preview your readiness, sleep, HRV, steps, and
+              tag data as charts, then save the batch into Supabase.
             </p>
           </div>
-          <Tag value="Zip to tables" severity="info" />
+          <Tag value="Zip to charts" severity="info" />
         </div>
 
         <div className="import-upload-shell mt-4">
@@ -204,7 +159,7 @@ export default function OuraImportPage() {
             <div>
               <p className="card-title">Upload a zipped Oura export</p>
               <p className="section-copy">
-                The parser will extract all CSV files from the archive and build preview tables.
+                The parser extracts all CSV files and builds interactive charts from your data.
               </p>
               <p className="section-copy import-dropzone-hint">
                 Desktop: drag and drop the Oura zip here or choose the file manually.
@@ -268,8 +223,6 @@ export default function OuraImportPage() {
           {importBundle ? (
             <div className="chip-grid">
               <Chip label={importBundle.fileName} className="mono" />
-              <Chip label={`${importBundle.tableCount} tables`} className="mono" />
-              <Chip label={`${importBundle.rowCount.toLocaleString()} rows`} className="mono" />
               <Chip label={`${importBundle.derivedMetricCount} metric days`} className="mono" />
               <Chip label={`${importBundle.derivedTagCount} tags`} className="mono" />
             </div>
@@ -301,91 +254,17 @@ export default function OuraImportPage() {
         </Card>
       ) : null}
 
-      {activeTable ? (
+      {previewData ? (
         <>
-          <Card>
-            <div className="page-header">
-              <div>
-                <h3 className="card-title">Preview carousel</h3>
-                <p className="section-copy">
-                  Move left or right to inspect each converted CSV table before saving it into Supabase.
-                </p>
-              </div>
-
-              <div className="import-carousel-controls">
-                <Button
-                  icon="pi pi-arrow-left"
-                  rounded
-                  outlined
-                  onClick={() => setActiveIndex((index) => Math.max(0, index - 1))}
-                  disabled={activeIndex === 0}
-                  aria-label="Previous table"
-                />
-                <Tag value={`${activeIndex + 1} / ${importBundle.tables.length}`} />
-                <Button
-                  icon="pi pi-arrow-right"
-                  rounded
-                  outlined
-                  onClick={() => setActiveIndex((index) => Math.min(importBundle.tables.length - 1, index + 1))}
-                  disabled={activeIndex === importBundle.tables.length - 1}
-                  aria-label="Next table"
-                />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="import-table-card">
-            <div className="page-header">
-              <div>
-                <h3 className="card-title">{activeTable.tableName}</h3>
-                <p className="section-copy">
-                  {activeTable.sourceFolder} • {activeTable.rowCount.toLocaleString()} rows • {activeTable.columns.length} columns
-                </p>
-              </div>
-
-              <div className="chip-grid">
-                <Chip label={`${Math.round(activeTable.csvByteSize / 1024)} KB`} className="mono" />
-                <Chip label={activeTable.tableSlug} className="mono" />
-              </div>
-            </div>
-
-            <div className="import-table-frame">
-              <DataTable
-                value={activeTable.rows}
-                dataKey="__rowId"
-                paginator
-                rows={10}
-                rowsPerPageOptions={[10, 25, 50]}
-                scrollable
-                scrollHeight="flex"
-                stripedRows
-                removableSort
-                size="small"
-                className="oura-preview-table"
-              >
-                {activeTable.columns.map((column) => (
-                  <Column
-                    key={column}
-                    field={column}
-                    header={column}
-                    sortable
-                    body={(rowData) => renderCellBody(rowData, column)}
-                    style={{ width: '10rem', minWidth: '10rem', maxWidth: '10rem' }}
-                    headerClassName="import-table-header"
-                    bodyClassName="import-table-body"
-                  />
-                ))}
-              </DataTable>
-            </div>
-          </Card>
+          <OuraCharts metrics={previewData.metrics} averages={previewData.averages} />
 
           <Card>
             <div className="page-header">
               <div>
                 <h3 className="card-title">Save import</h3>
                 <p className="section-copy">
-                  Saving syncs recognized daily metrics and tags into the app’s existing Oura tables. The raw preview
-                  tables stay in the browser for review only.
+                  Saving syncs the metrics and tags shown above into Supabase. The Insights page
+                  will update automatically.
                 </p>
               </div>
               <Button
@@ -398,26 +277,18 @@ export default function OuraImportPage() {
           </Card>
         </>
       ) : (
-        <Card className="import-empty-card">
-          <div className="section-stack">
-            <h3 className="card-title">No import loaded yet</h3>
-            <p className="section-copy">
-              Select an Oura zip export to generate preview tables. The converted tables will appear here in a
-              left-right carousel with sortable columns.
-            </p>
-          </div>
-        </Card>
+        !parseState.parsing && (
+          <Card className="import-empty-card">
+            <div className="section-stack">
+              <h3 className="card-title">No import loaded yet</h3>
+              <p className="section-copy">
+                Upload an Oura zip export to preview your readiness, sleep, HRV, steps, and tag
+                data as charts before saving to Supabase.
+              </p>
+            </div>
+          </Card>
+        )
       )}
-
-      <Dialog
-        header={expandedCell ? `Full value • ${expandedCell.columnName}` : 'Full value'}
-        visible={Boolean(expandedCell)}
-        style={{ width: 'min(72rem, 92vw)' }}
-        breakpoints={{ '960px': '94vw' }}
-        onHide={() => setExpandedCell(null)}
-      >
-        <pre className="import-cell-dialog">{expandedCell?.value}</pre>
-      </Dialog>
     </div>
   )
 }

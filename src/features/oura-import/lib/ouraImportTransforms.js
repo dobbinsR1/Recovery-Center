@@ -286,6 +286,51 @@ export function buildDerivedTagRows(tables, userId) {
     .filter(Boolean)
 }
 
+export function buildPreviewMetrics(tables) {
+  const metricRows = buildDerivedMetricRows(tables, 'preview')
+  const tagRows = buildDerivedTagRows(tables, 'preview')
+
+  const tagsByDate = new Map()
+  for (const row of tagRows) {
+    if (!tagsByDate.has(row.metric_date)) tagsByDate.set(row.metric_date, [])
+    tagsByDate.get(row.metric_date).push(row.label)
+  }
+
+  const metrics = metricRows.map((row) => ({
+    id: row.metric_date,
+    metricDate: row.metric_date,
+    readinessScore: row.readiness_score,
+    sleepScore: row.sleep_score,
+    totalSleepMinutes: row.total_sleep_minutes,
+    deepSleepMinutes: row.deep_sleep_minutes,
+    remSleepMinutes: row.rem_sleep_minutes,
+    hrv: row.hrv,
+    restingHeartRate: row.resting_heart_rate,
+    steps: row.steps,
+    sleepStartAt: row.sleep_start_at ?? null,
+    sleepEndAt: row.sleep_end_at ?? null,
+    heartRateSamples: row.heart_rate_samples ?? [],
+    stressSamples: row.stress_samples ?? [],
+    recoverySamples: row.recovery_samples ?? [],
+    tags: tagsByDate.get(row.metric_date) ?? [],
+  }))
+
+  function avg(values) {
+    const v = values.filter((x) => x != null)
+    return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null
+  }
+
+  return {
+    metrics,
+    averages: {
+      readiness: avg(metrics.map((m) => m.readinessScore)),
+      sleep: avg(metrics.map((m) => m.sleepScore)),
+      hrv: avg(metrics.map((m) => m.hrv)),
+      steps: avg(metrics.map((m) => m.steps)),
+    },
+  }
+}
+
 export function summarizeImport(tables, userId = 'preview') {
   const metricRows = buildDerivedMetricRows(tables, userId)
   const tagRows = buildDerivedTagRows(tables, userId)
