@@ -5,7 +5,6 @@ import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -21,11 +20,6 @@ import {
 } from 'recharts'
 import { Link } from 'react-router-dom'
 import { formatShortDate } from '../../lib/date'
-
-function average(values) {
-  if (!values.length) return null
-  return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1))
-}
 
 function buildChartData(metrics) {
   return [...metrics]
@@ -182,36 +176,28 @@ function EmptyInsightsState() {
 }
 
 export function OuraCharts({ metrics, averages }) {
-  const intradayMetrics = useMemo(
+  const dayOptions = useMemo(
     () =>
       [...metrics]
-        .filter(hasIntradayData)
-        .sort((left, right) => right.metricDate.localeCompare(left.metricDate)),
-    [metrics],
-  )
-  const intradayOptions = useMemo(
-    () =>
-      (intradayMetrics.length ? intradayMetrics : [...metrics].sort((left, right) => right.metricDate.localeCompare(left.metricDate)))
+        .sort((left, right) => right.metricDate.localeCompare(left.metricDate))
         .map((metric) => ({
           label: formatShortDate(metric.metricDate),
           value: metric.metricDate,
         })),
-    [intradayMetrics, metrics],
+    [metrics],
   )
-  const [selectedMetricDate, setSelectedMetricDate] = useState(intradayOptions[0]?.value ?? null)
+  const [selectedMetricDate, setSelectedMetricDate] = useState(dayOptions[0]?.value ?? null)
 
   useEffect(() => {
-    if (!intradayOptions.some((option) => option.value === selectedMetricDate)) {
-      setSelectedMetricDate(intradayOptions[0]?.value ?? null)
+    if (!dayOptions.some((option) => option.value === selectedMetricDate)) {
+      setSelectedMetricDate(dayOptions[0]?.value ?? null)
     }
-  }, [intradayOptions, selectedMetricDate])
+  }, [dayOptions, selectedMetricDate])
 
-  const selectedIntradayMetric =
-    intradayMetrics.find((metric) => metric.metricDate === selectedMetricDate) ??
-    metrics.find((metric) => metric.metricDate === selectedMetricDate) ??
-    intradayMetrics[0] ??
-    metrics.at(-1)
-  const intradayChartData = buildIntradayChartData(selectedIntradayMetric)
+  const selectedDayMetric =
+    metrics.find((metric) => metric.metricDate === selectedMetricDate) ?? metrics.at(-1)
+  const intradayChartData = buildIntradayChartData(selectedDayMetric)
+  const hasIntraday = hasIntradayData(selectedDayMetric)
   if (!metrics.length) {
     return <EmptyInsightsState />
   }
@@ -297,7 +283,7 @@ export function OuraCharts({ metrics, averages }) {
           {tagFrequency.length ? (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={tagFrequency} layout="vertical" margin={{ left: 20, right: 10 }}>
-                <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" horizontal={false} />
+                <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                 <YAxis dataKey="label" type="category" tick={{ fontSize: 11 }} width={110} />
                 <Tooltip content={<CustomTooltip />} />
@@ -319,7 +305,7 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">Readiness and sleep score</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} domain={[30, 100]} />
               <Tooltip content={<CustomTooltip />} />
@@ -333,14 +319,22 @@ export function OuraCharts({ metrics, averages }) {
         <Card className="chart-card">
           <h3 className="card-title">HRV and resting heart rate</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+            <LineChart data={chartData}>
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar yAxisId="left" dataKey="hrv" fill="rgba(23, 126, 114, 0.26)" name="HRV" radius={[6, 6, 0, 0]} />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="hrv"
+                stroke="#38bdf8"
+                strokeWidth={3}
+                dot={false}
+                name="HRV"
+              />
               <Line
                 yAxisId="right"
                 type="monotone"
@@ -350,7 +344,7 @@ export function OuraCharts({ metrics, averages }) {
                 dot={false}
                 name="Resting HR"
               />
-            </ComposedChart>
+            </LineChart>
           </ResponsiveContainer>
         </Card>
       </div>
@@ -358,42 +352,75 @@ export function OuraCharts({ metrics, averages }) {
       <Card className="chart-card">
         <div className="page-header">
           <div>
-            <h3 className="card-title">Time-based day view</h3>
+            <h3 className="card-title">Day view</h3>
             <p className="section-copy">
-              View heart rate, stress, recovery, and sleep timing for a single Oura day pulled back from Supabase.
+              Pick any day to see the full Oura summary. If time-based samples were synced for that day, an intraday chart appears below.
             </p>
           </div>
           <Dropdown
             value={selectedMetricDate}
-            options={intradayOptions}
+            options={dayOptions}
             onChange={(event) => setSelectedMetricDate(event.value)}
             className="oura-day-picker"
           />
         </div>
 
-        <div className="grid-two mt-4">
+        <div className="kpi-grid mt-4">
+          <div className="kpi-card">
+            <span className="kpi-label">Readiness</span>
+            <span className="kpi-value">{selectedDayMetric?.readinessScore ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Sleep score</span>
+            <span className="kpi-value">{selectedDayMetric?.sleepScore ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">HRV</span>
+            <span className="kpi-value">{selectedDayMetric?.hrv ?? '--'}</span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Resting HR</span>
+            <span className="kpi-value">{selectedDayMetric?.restingHeartRate ?? '--'}</span>
+          </div>
+        </div>
+
+        <div className="kpi-grid mt-3">
+          <div className="kpi-card">
+            <span className="kpi-label">Sleep hours</span>
+            <span className="kpi-value">
+              {selectedDayMetric?.totalSleepMinutes
+                ? `${(selectedDayMetric.totalSleepMinutes / 60).toFixed(1)}h`
+                : '--'}
+            </span>
+          </div>
+          <div className="kpi-card">
+            <span className="kpi-label">Steps</span>
+            <span className="kpi-value">
+              {selectedDayMetric?.steps != null ? selectedDayMetric.steps.toLocaleString() : '--'}
+            </span>
+          </div>
           <div className="kpi-card">
             <span className="kpi-label">Sleep start</span>
             <span className="kpi-value">
-              {selectedIntradayMetric?.sleepStartAt
-                ? new Date(selectedIntradayMetric.sleepStartAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              {selectedDayMetric?.sleepStartAt
+                ? new Date(selectedDayMetric.sleepStartAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
                 : '--'}
             </span>
           </div>
           <div className="kpi-card">
             <span className="kpi-label">Sleep end</span>
             <span className="kpi-value">
-              {selectedIntradayMetric?.sleepEndAt
-                ? new Date(selectedIntradayMetric.sleepEndAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+              {selectedDayMetric?.sleepEndAt
+                ? new Date(selectedDayMetric.sleepEndAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
                 : '--'}
             </span>
           </div>
         </div>
 
-        {intradayChartData.length ? (
+        {hasIntraday && intradayChartData.length ? (
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={intradayChartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="timeLabel" tick={{ fontSize: 11 }} minTickGap={24} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
@@ -405,7 +432,7 @@ export function OuraCharts({ metrics, averages }) {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="section-copy mt-4">No time-based Oura samples were synced for this day yet.</p>
+          <p className="section-copy mt-4">No time-based Oura samples were synced for this day. Daily summary values are shown above.</p>
         )}
       </Card>
 
@@ -413,16 +440,16 @@ export function OuraCharts({ metrics, averages }) {
         <Card className="chart-card">
           <h3 className="card-title">Sleep stages and duration</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+            <LineChart data={chartData}>
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="sleepHours" fill="#d56c47" name="Total sleep" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="deepHours" fill="#177e72" name="Deep" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="remHours" fill="#d3a63f" name="REM" radius={[8, 8, 0, 0]} />
-            </BarChart>
+              <Line type="monotone" dataKey="sleepHours" stroke="#d56c47" strokeWidth={3} dot={false} name="Total sleep" />
+              <Line type="monotone" dataKey="deepHours" stroke="#177e72" strokeWidth={3} dot={false} name="Deep" />
+              <Line type="monotone" dataKey="remHours" stroke="#d3a63f" strokeWidth={3} dot={false} name="REM" />
+            </LineChart>
           </ResponsiveContainer>
         </Card>
 
@@ -430,7 +457,7 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">Daily steps and tag load</h3>
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} allowDecimals={false} />
@@ -462,15 +489,15 @@ export function OuraCharts({ metrics, averages }) {
         <Card className="chart-card">
           <h3 className="card-title">Day-over-day score change</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+            <LineChart data={chartData}>
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="readinessDelta" fill="#177e72" name="Readiness delta" radius={[8, 8, 0, 0]} />
-              <Bar dataKey="sleepDelta" fill="#d56c47" name="Sleep delta" radius={[8, 8, 0, 0]} />
-            </BarChart>
+              <Line type="monotone" dataKey="readinessDelta" stroke="#177e72" strokeWidth={3} dot={false} name="Readiness delta" />
+              <Line type="monotone" dataKey="sleepDelta" stroke="#d56c47" strokeWidth={3} dot={false} name="Sleep delta" />
+            </LineChart>
           </ResponsiveContainer>
         </Card>
 
