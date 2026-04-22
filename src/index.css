@@ -1137,9 +1137,12 @@ textarea {
   }
 
   .grid-two,
-  .grid-three,
-  .kpi-grid {
+  .grid-three {
     grid-template-columns: 1fr;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .history-mobile-summary,
@@ -1213,4 +1216,54 @@ textarea {
   .login-support {
     display: none;
   }
+}
+
+/* ── AI Insight Card ─────────────────────────────────────── */
+
+.ai-insight-card {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.14), rgba(14, 28, 48, 0.7));
+  border: 1px solid rgba(96, 165, 250, 0.28);
+}
+
+.ai-insight-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+}
+
+.ai-insight-icon {
+  font-size: 1.1rem;
+  color: #60a5fa;
+  line-height: 1;
+}
+
+.ai-insight-refresh.p-button {
+  margin-left: auto;
+  color: var(--rc-muted);
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.ai-insight-message {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--rc-ink);
+  letter-spacing: -0.01em;
+}
+
+.ai-insight-skeleton {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* ── Delta badge ─────────────────────────────────────── */
+
+.delta-badge {
+  margin-left: 0.45rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: 'IBM Plex Mono', monospace;
+  opacity: 0.85;
 }

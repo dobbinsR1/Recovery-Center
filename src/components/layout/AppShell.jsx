@@ -24,7 +24,7 @@ const MOBILE_NAV_ITEMS = [
   { to: '/home', icon: 'pi pi-home', label: 'Home' },
   { to: '/daily-log', icon: 'pi pi-heart', label: 'Log' },
   { to: '/nutrition', icon: 'pi pi-apple', label: 'Food' },
-  { to: '/insights', icon: 'pi pi-chart-line', label: 'Oura' },
+  { to: '/insights', icon: 'pi pi-chart-line', label: 'Charts' },
   { to: '/history', icon: 'pi pi-clock', label: 'History' },
 ]
 
