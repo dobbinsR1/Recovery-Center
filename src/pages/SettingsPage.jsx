@@ -2,7 +2,11 @@ import { useState } from 'react'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
 import { useAuth } from '../features/auth/AuthContext'
-import { fixWeekNumbers, importHistoricalData } from '../features/migration/migrationService'
+import {
+  extendProgramTo16Weeks,
+  fixWeekNumbers,
+  importHistoricalData,
+} from '../features/migration/migrationService'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
 
 function downloadFile(filename, mimeType, content) {
@@ -25,6 +29,10 @@ export default function SettingsPage() {
   const [fixStatus, setFixStatus] = useState('idle')
   const [fixResult, setFixResult] = useState(null)
   const [fixError, setFixError] = useState(null)
+
+  const [extendStatus, setExtendStatus] = useState('idle')
+  const [extendResult, setExtendResult] = useState(null)
+  const [extendError, setExtendError] = useState(null)
 
   const runImport = async () => {
     setImportStatus('running')
@@ -51,6 +59,20 @@ export default function SettingsPage() {
     } catch (err) {
       setFixError(err.message ?? 'Unknown error')
       setFixStatus('error')
+    }
+  }
+
+  const runExtend = async () => {
+    setExtendStatus('running')
+    setExtendResult(null)
+    setExtendError(null)
+    try {
+      const result = await extendProgramTo16Weeks(user)
+      setExtendResult(result)
+      setExtendStatus('done')
+    } catch (err) {
+      setExtendError(err.message ?? 'Unknown error')
+      setExtendStatus('error')
     }
   }
 
@@ -148,6 +170,35 @@ export default function SettingsPage() {
           {importStatus === 'error' && (
             <p className="section-copy" style={{ color: 'var(--red-500)' }}>
               Error: {importError}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="card-title">Extend Program to 16 Weeks</h3>
+        <div className="section-stack">
+          <p className="section-copy">
+            Adds weeks 9–16 to the tracker so you can keep logging past the original 8-week window.
+            Existing weeks, daily logs, Oura data, and supplements are not touched. Safe to run
+            multiple times.
+          </p>
+          <Button
+            label={extendStatus === 'running' ? 'Extending…' : 'Extend to 16 weeks'}
+            icon={extendStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-plus'}
+            loading={extendStatus === 'running'}
+            onClick={runExtend}
+          />
+          {extendStatus === 'done' && extendResult && (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              {extendResult.alreadyExtended
+                ? `Program is already ${extendResult.totalWeeks} weeks long — nothing to add.`
+                : `Done — added ${extendResult.added} new weeks. Total is now ${extendResult.totalWeeks} weeks. Reload the page to see the new week buttons.`}
+            </p>
+          )}
+          {extendStatus === 'error' && (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {extendError}
             </p>
           )}
         </div>

@@ -9,6 +9,8 @@ const PHASE_TWO_START_WEEK = 5
 const PHASE_ONE_DOSE = 1
 const PHASE_TWO_DOSE = 2
 
+const TARGET_TOTAL_WEEKS = 16
+
 function addDays(isoDate, days) {
   const d = new Date(`${isoDate}T12:00:00`)
   d.setDate(d.getDate() + days)
@@ -22,10 +24,12 @@ function weekNumberForDate(startDate, entryDate) {
   return Math.floor(days / 7) + 1
 }
 
-export async function fixWeekNumbers(user) {
+export async function extendProgramTo16Weeks(user) {
   const { data: programRow, error: programError } = await supabase
     .from('recovery_programs')
-    .select('id, start_date')
+    .select(
+      'id, start_date, total_weeks, phase_two_starts_week, phase_one_dose_mg, phase_two_dose_mg',
+    )
     .eq('user_id', user.id)
     .eq('is_active', true)
     .order('created_at', { ascending: false })
@@ -33,7 +37,67 @@ export async function fixWeekNumbers(user) {
     .single()
 
   if (programError) throw programError
-  const { id: programId, start_date: startDate } = programRow
+
+  const {
+    id: programId,
+    start_date: startDate,
+    total_weeks: currentTotalWeeks,
+    phase_two_starts_week: phaseTwoStartsWeek,
+    phase_one_dose_mg: phaseOneDose,
+    phase_two_dose_mg: phaseTwoDose,
+  } = programRow
+
+  if (currentTotalWeeks >= TARGET_TOTAL_WEEKS) {
+    return { added: 0, totalWeeks: currentTotalWeeks, alreadyExtended: true }
+  }
+
+  const newWeekRows = []
+  for (let weekNumber = currentTotalWeeks + 1; weekNumber <= TARGET_TOTAL_WEEKS; weekNumber += 1) {
+    const offset = (weekNumber - 1) * 7
+    const isPhaseTwo = weekNumber >= phaseTwoStartsWeek
+    newWeekRows.push({
+      program_id: programId,
+      week_number: weekNumber,
+      starts_on: addDays(startDate, offset),
+      ends_on: addDays(startDate, offset + 6),
+      phase_label: isPhaseTwo ? 'Phase 2' : 'Phase 1',
+      dose_mg: isPhaseTwo ? phaseTwoDose : phaseOneDose,
+    })
+  }
+
+  const { error: weeksError } = await supabase
+    .from('recovery_weeks')
+    .upsert(newWeekRows, { onConflict: 'program_id,week_number' })
+
+  if (weeksError) throw weeksError
+
+  const { error: updateError } = await supabase
+    .from('recovery_programs')
+    .update({ total_weeks: TARGET_TOTAL_WEEKS })
+    .eq('id', programId)
+
+  if (updateError) throw updateError
+
+  return {
+    added: newWeekRows.length,
+    totalWeeks: TARGET_TOTAL_WEEKS,
+    alreadyExtended: false,
+  }
+}
+
+export async function fixWeekNumbers(user) {
+  const { data: programRow, error: programError } = await supabase
+    .from('recovery_programs')
+    .select('id, start_date, total_weeks')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (programError) throw programError
+  const { id: programId, start_date: startDate, total_weeks: programTotalWeeks } = programRow
+  const totalWeeks = programTotalWeeks ?? TOTAL_WEEKS
 
   const { data: weekRows, error: weeksError } = await supabase
     .from('recovery_weeks')
@@ -52,7 +116,7 @@ export async function fixWeekNumbers(user) {
 
   const toUpdate = entries.filter((e) => {
     const correct = weekNumberForDate(startDate, e.entry_date)
-    return correct !== e.week_number && correct >= 1 && correct <= TOTAL_WEEKS
+    return correct !== e.week_number && correct >= 1 && correct <= totalWeeks
   })
 
   for (const entry of toUpdate) {
