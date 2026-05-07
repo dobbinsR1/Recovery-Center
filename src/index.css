@@ -704,6 +704,70 @@ textarea {
   gap: 1rem;
 }
 
+/* ── Native range slider ─────────────────────────── */
+
+.log-slider-row {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rc-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--slider-color, var(--rc-teal)) var(--slider-pct, 50%),
+    rgba(255, 255, 255, 0.12) var(--slider-pct, 50%)
+  );
+  outline: none;
+  cursor: pointer;
+  touch-action: pan-x;
+}
+
+.rc-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--slider-color, var(--rc-teal));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  transition: transform 100ms ease, box-shadow 100ms ease;
+}
+
+.rc-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.18);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6);
+}
+
+.rc-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: var(--slider-color, var(--rc-teal));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+}
+
+.rc-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.rc-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--slider-color, var(--rc-teal));
+}
+
 .footer-note {
   color: var(--rc-muted);
   font-size: 0.92rem;
@@ -904,7 +968,65 @@ textarea {
   }
 
   .app-main {
-    padding: 1rem 1rem 5.5rem;
+    padding: 0.75rem 0.75rem 5.5rem;
+  }
+
+  /* Tighter vertical rhythm on mobile */
+  .section-stack {
+    gap: 0.75rem;
+  }
+
+  /* Reduce card padding on mobile */
+  .p-card .p-card-body {
+    padding: 1rem;
+  }
+
+  /* Week strip: horizontal scroll on mobile (handles 16 weeks) */
+  .week-strip {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .week-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .week-button {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    min-width: 5rem;
+  }
+
+  /* Day strip: evenly fill the row, no wrap */
+  .day-strip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    flex-wrap: unset;
+  }
+
+  .day-button {
+    min-width: 0;
+    padding: 0.6rem 0.25rem;
+    font-size: 0.82rem;
+  }
+
+  /* Larger tap targets on sliders */
+  .rc-slider {
+    height: 8px;
+  }
+
+  .rc-slider::-webkit-slider-thumb {
+    width: 28px;
+    height: 28px;
+  }
+
+  .log-slider-row {
+    gap: 0.65rem;
+    padding: 0.2rem 0;
   }
 
   .mobile-nav {
