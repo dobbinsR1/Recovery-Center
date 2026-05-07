@@ -5,7 +5,7 @@ export default function HistoryPage() {
   const { snapshot, loading } = useRecoveryData()
 
   if (loading) {
-    return <div className="mono">Loading history...</div>
+    return null
   }
 
   return <HistoryList logs={snapshot.dailyLogs} />

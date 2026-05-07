@@ -5,7 +5,7 @@ export default function InsightsPage() {
   const { snapshot, loading } = useRecoveryData()
 
   if (loading) {
-    return <div className="mono">Loading insights...</div>
+    return null
   }
 
   return <OuraCharts metrics={snapshot.ouraMetrics} averages={snapshot.ouraAverages} />

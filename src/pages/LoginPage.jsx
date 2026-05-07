@@ -2,30 +2,30 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
-import { Divider } from 'primereact/divider'
 import { InputText } from 'primereact/inputtext'
-import { Message } from 'primereact/message'
 import { Password } from 'primereact/password'
+import recoveryCenterLogo from '../assets/recovery_center.png'
 import { useAuth } from '../features/auth/AuthContext'
+import { useAppToast } from '../features/ui/ToastContext'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { isSupabaseConfigured, signInWithPassword } = useAuth()
+  const { showError, showSuccess } = useAppToast()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
 
   const handleSubmit = async (event) => {
     event.preventDefault()
     setLoading(true)
-    setError('')
 
     try {
       await signInWithPassword({ identifier, password })
-      navigate('/', { replace: true })
+      showSuccess('Signed in', 'Login validation succeeded.')
+      navigate('/home', { replace: true })
     } catch (submitError) {
-      setError(submitError.message || 'Unable to sign in.')
+      showError('Login failed', submitError.message || 'Unable to sign in.')
     } finally {
       setLoading(false)
     }
@@ -34,6 +34,7 @@ export default function LoginPage() {
   return (
     <div className="login-shell">
       <section className="login-hero">
+        <img src={recoveryCenterLogo} alt="Recovery Center logo" className="login-logo" />
         <span className="brand-pill">Recovery Center</span>
         <div>
           <h1 className="brand-title" style={{ fontSize: 'clamp(2.8rem, 6vw, 5rem)', lineHeight: 0.94 }}>
@@ -63,8 +64,8 @@ export default function LoginPage() {
           <div className="login-point">
             <i className="pi pi-database text-xl" />
             <div>
-              <strong>Supabase ready</strong>
-              <span className="section-copy">Runs with mock data now and switches to Supabase when env vars are added.</span>
+              <strong>Supabase backed</strong>
+              <span className="section-copy">Authentication and recovery tracking write directly to your Supabase project.</span>
             </div>
           </div>
         </div>
@@ -73,56 +74,55 @@ export default function LoginPage() {
       <section className="login-card-wrap">
         <Card className="login-card">
           <div className="section-stack">
+            <div className="login-card-brand">
+              <img src={recoveryCenterLogo} alt="Recovery Center logo" className="login-card-logo" />
+              <div>
+                <span className="brand-pill">Recovery Center</span>
+              </div>
+            </div>
+
             <div className="login-context">
               <h2 className="card-title">Sign in</h2>
               <p className="section-copy">
                 {isSupabaseConfigured
-                  ? 'Use your Supabase auth credentials or switch to the seeded demo workspace.'
-                  : 'Supabase is not configured yet, so the app will open in seeded demo mode by default.'}
+                  ? 'Use Supabase Auth for password login. Recovery Center stores your username and tracking data in Supabase.'
+                  : 'Add your Supabase URL and anon key to enable authentication.'}
               </p>
             </div>
 
-            {error ? <Message className="login-support" severity="error" text={error} /> : null}
-            {!isSupabaseConfigured ? (
-              <Message
-                className="login-support"
-                severity="info"
-                text="Demo mode is active. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable live auth."
-              />
-            ) : null}
-
-            <form onSubmit={handleSubmit} className="section-stack">
-              <span className="p-float-label">
+            <form onSubmit={handleSubmit} className="section-stack login-form">
+              <label className="login-field">
+                <span className="login-field-label">Email or username</span>
                 <InputText
-                  id="identifier"
+                  inputId="identifier"
                   value={identifier}
                   onChange={(event) => setIdentifier(event.target.value)}
                   className="w-full"
+                  placeholder="Email or username"
                 />
-                <label htmlFor="identifier">{isSupabaseConfigured ? 'Email' : 'Username'}</label>
-              </span>
+              </label>
 
-              <span className="p-float-label">
+              <label className="login-field">
+                <span className="login-field-label">Password</span>
                 <Password
-                  id="password"
+                  inputId="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   toggleMask
                   feedback={false}
                   inputClassName="w-full"
-                  className="w-full"
+                  className="w-full login-password"
+                  placeholder="Password"
                 />
-                <label htmlFor="password">Password</label>
-              </span>
+              </label>
 
-              <Button type="submit" label={loading ? 'Signing in...' : 'Sign in'} loading={loading} />
+              <Button
+                type="submit"
+                label={loading ? 'Signing in...' : 'Sign in'}
+                loading={loading}
+                disabled={!isSupabaseConfigured}
+              />
             </form>
-
-            <div className="login-demo">
-              <Divider align="center">
-                <span className="mono">demo mode</span>
-              </Divider>
-            </div>
           </div>
         </Card>
       </section>

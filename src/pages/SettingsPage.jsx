@@ -1,6 +1,12 @@
-import { Card } from 'primereact/card'
+import { useState } from 'react'
 import { Button } from 'primereact/button'
-import { Message } from 'primereact/message'
+import { Card } from 'primereact/card'
+import { useAuth } from '../features/auth/AuthContext'
+import {
+  extendProgramTo16Weeks,
+  fixWeekNumbers,
+  importHistoricalData,
+} from '../features/migration/migrationService'
 import { useRecoveryData } from '../features/recovery/RecoveryDataContext'
 
 function downloadFile(filename, mimeType, content) {
@@ -15,9 +21,63 @@ function downloadFile(filename, mimeType, content) {
 
 export default function SettingsPage() {
   const { snapshot, loading } = useRecoveryData()
+  const { user } = useAuth()
+  const [importStatus, setImportStatus] = useState('idle')
+  const [importResult, setImportResult] = useState(null)
+  const [importError, setImportError] = useState(null)
+
+  const [fixStatus, setFixStatus] = useState('idle')
+  const [fixResult, setFixResult] = useState(null)
+  const [fixError, setFixError] = useState(null)
+
+  const [extendStatus, setExtendStatus] = useState('idle')
+  const [extendResult, setExtendResult] = useState(null)
+  const [extendError, setExtendError] = useState(null)
+
+  const runImport = async () => {
+    setImportStatus('running')
+    setImportResult(null)
+    setImportError(null)
+    try {
+      const result = await importHistoricalData(user)
+      setImportResult(result)
+      setImportStatus('done')
+    } catch (err) {
+      setImportError(err.message ?? 'Unknown error')
+      setImportStatus('error')
+    }
+  }
+
+  const runFixWeeks = async () => {
+    setFixStatus('running')
+    setFixResult(null)
+    setFixError(null)
+    try {
+      const result = await fixWeekNumbers(user)
+      setFixResult(result)
+      setFixStatus('done')
+    } catch (err) {
+      setFixError(err.message ?? 'Unknown error')
+      setFixStatus('error')
+    }
+  }
+
+  const runExtend = async () => {
+    setExtendStatus('running')
+    setExtendResult(null)
+    setExtendError(null)
+    try {
+      const result = await extendProgramTo16Weeks(user)
+      setExtendResult(result)
+      setExtendStatus('done')
+    } catch (err) {
+      setExtendError(err.message ?? 'Unknown error')
+      setExtendStatus('error')
+    }
+  }
 
   if (loading) {
-    return <div className="mono">Loading settings...</div>
+    return null
   }
 
   const exportJson = () => {
@@ -83,17 +143,93 @@ export default function SettingsPage() {
         <div className="page-header">
           <div>
             <h2>Settings and handoff</h2>
-            <p className="section-copy">This page makes the current build easy to inspect before live Supabase rollout.</p>
+            <p className="section-copy">Export recovery data and review the project files behind the live Supabase build.</p>
           </div>
         </div>
       </Card>
 
-      {snapshot.mode !== 'supabase' ? (
-        <Message
-          severity="info"
-          text="The app is currently running in demo mode. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to switch auth and data loading over to Supabase."
-        />
-      ) : null}
+      <Card>
+        <h3 className="card-title">Import Historical Data</h3>
+        <div className="section-stack">
+          <p className="section-copy">
+            Imports your Mar 3 – Apr 6 Oura data and Week 1 symptom logs from the original protocol,
+            and resets the program start date to March 1, 2026. Safe to run multiple times.
+          </p>
+          <Button
+            label={importStatus === 'running' ? 'Importing…' : 'Import historical data'}
+            icon={importStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-upload'}
+            loading={importStatus === 'running'}
+            onClick={runImport}
+          />
+          {importStatus === 'done' && importResult && (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              Done — {importResult.ouraCount} Oura days, {importResult.tagCount} tags,{' '}
+              {importResult.logCount} symptom logs imported. Reload the page to see updated data.
+            </p>
+          )}
+          {importStatus === 'error' && (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {importError}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="card-title">Extend Program to 16 Weeks</h3>
+        <div className="section-stack">
+          <p className="section-copy">
+            Adds weeks 9–16 to the tracker so you can keep logging past the original 8-week window.
+            Existing weeks, daily logs, Oura data, and supplements are not touched. Safe to run
+            multiple times.
+          </p>
+          <Button
+            label={extendStatus === 'running' ? 'Extending…' : 'Extend to 16 weeks'}
+            icon={extendStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-plus'}
+            loading={extendStatus === 'running'}
+            onClick={runExtend}
+          />
+          {extendStatus === 'done' && extendResult && (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              {extendResult.alreadyExtended
+                ? `Program is already ${extendResult.totalWeeks} weeks long — nothing to add.`
+                : `Done — added ${extendResult.added} new weeks. Total is now ${extendResult.totalWeeks} weeks. Reload the page to see the new week buttons.`}
+            </p>
+          )}
+          {extendStatus === 'error' && (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {extendError}
+            </p>
+          )}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="card-title">Fix Week Numbers</h3>
+        <div className="section-stack">
+          <p className="section-copy">
+            Re-assigns any entries whose week number doesn't match their actual date. Run this if
+            entries appear in the wrong week after the historical import.
+          </p>
+          <Button
+            label={fixStatus === 'running' ? 'Fixing…' : 'Fix week numbers'}
+            icon={fixStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-sync'}
+            loading={fixStatus === 'running'}
+            onClick={runFixWeeks}
+          />
+          {fixStatus === 'done' && fixResult && (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              Done — {fixResult.fixed} {fixResult.fixed === 1 ? 'entry' : 'entries'} moved to the
+              correct week. Reload the page to see the changes.
+            </p>
+          )}
+          {fixStatus === 'error' && (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {fixError}
+            </p>
+          )}
+        </div>
+      </Card>
 
       <div className="grid-two">
         <Card>

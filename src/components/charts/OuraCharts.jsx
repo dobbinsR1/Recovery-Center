@@ -5,7 +5,6 @@ import { Dropdown } from 'primereact/dropdown'
 import { Tag } from 'primereact/tag'
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -21,11 +20,6 @@ import {
 } from 'recharts'
 import { Link } from 'react-router-dom'
 import { formatShortDate } from '../../lib/date'
-
-function average(values) {
-  if (!values.length) return null
-  return Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1))
-}
 
 function buildChartData(metrics) {
   return [...metrics]
@@ -203,6 +197,7 @@ export function OuraCharts({ metrics, averages }) {
   const selectedDayMetric =
     metrics.find((metric) => metric.metricDate === selectedMetricDate) ?? metrics.at(-1)
   const intradayChartData = buildIntradayChartData(selectedDayMetric)
+  const hasIntraday = hasIntradayData(selectedDayMetric)
   if (!metrics.length) {
     return <EmptyInsightsState />
   }
@@ -288,7 +283,7 @@ export function OuraCharts({ metrics, averages }) {
           {tagFrequency.length ? (
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={tagFrequency} layout="vertical" margin={{ left: 20, right: 10 }}>
-                <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" horizontal={false} />
+                <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
                 <YAxis dataKey="label" type="category" tick={{ fontSize: 11 }} width={110} />
                 <Tooltip content={<CustomTooltip />} />
@@ -310,7 +305,7 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">Readiness and sleep score</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} domain={[30, 100]} />
               <Tooltip content={<CustomTooltip />} />
@@ -325,14 +320,30 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">HRV and resting heart rate</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="hrv" stroke="#177e72" strokeWidth={3} dot={false} name="HRV" />
-              <Line yAxisId="right" type="monotone" dataKey="restingHeartRate" stroke="#d3a63f" strokeWidth={3} dot={false} name="Resting HR" />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="hrv"
+                stroke="#38bdf8"
+                strokeWidth={3}
+                dot={false}
+                name="HRV"
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="restingHeartRate"
+                stroke="#d3a63f"
+                strokeWidth={3}
+                dot={false}
+                name="Resting HR"
+              />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -343,7 +354,7 @@ export function OuraCharts({ metrics, averages }) {
           <div>
             <h3 className="card-title">Day view</h3>
             <p className="section-copy">
-              Pick any day to see its scores and hourly heart rate, stress, and recovery lines.
+              Pick any day to see the full Oura summary. If time-based samples were synced for that day, an intraday chart appears below.
             </p>
           </div>
           <Dropdown
@@ -371,11 +382,14 @@ export function OuraCharts({ metrics, averages }) {
             <span className="kpi-label">Resting HR</span>
             <span className="kpi-value">{selectedDayMetric?.restingHeartRate ?? '--'}</span>
           </div>
+        </div>
+
+        <div className="kpi-grid mt-3">
           <div className="kpi-card">
-            <span className="kpi-label">Sleep</span>
+            <span className="kpi-label">Sleep hours</span>
             <span className="kpi-value">
               {selectedDayMetric?.totalSleepMinutes
-                ? `${Number((selectedDayMetric.totalSleepMinutes / 60).toFixed(1))}h`
+                ? `${(selectedDayMetric.totalSleepMinutes / 60).toFixed(1)}h`
                 : '--'}
             </span>
           </div>
@@ -403,10 +417,10 @@ export function OuraCharts({ metrics, averages }) {
           </div>
         </div>
 
-        {intradayChartData.length ? (
+        {hasIntraday && intradayChartData.length ? (
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={intradayChartData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="timeLabel" tick={{ fontSize: 11 }} minTickGap={24} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} />
@@ -418,10 +432,7 @@ export function OuraCharts({ metrics, averages }) {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p className="section-copy mt-4">
-            Hourly data not available for this day. To add heart rate, stress, and recovery lines,
-            run the Supabase column migration then re-import your Oura zip.
-          </p>
+          <p className="section-copy mt-4">No time-based Oura samples were synced for this day. Daily summary values are shown above.</p>
         )}
       </Card>
 
@@ -430,14 +441,14 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">Sleep stages and duration</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Line type="monotone" dataKey="sleepHours" stroke="#d56c47" strokeWidth={3} dot={false} name="Total sleep (h)" />
-              <Line type="monotone" dataKey="deepHours" stroke="#177e72" strokeWidth={3} dot={false} name="Deep (h)" />
-              <Line type="monotone" dataKey="remHours" stroke="#d3a63f" strokeWidth={3} dot={false} name="REM (h)" />
+              <Line type="monotone" dataKey="sleepHours" stroke="#d56c47" strokeWidth={3} dot={false} name="Total sleep" />
+              <Line type="monotone" dataKey="deepHours" stroke="#177e72" strokeWidth={3} dot={false} name="Deep" />
+              <Line type="monotone" dataKey="remHours" stroke="#d3a63f" strokeWidth={3} dot={false} name="REM" />
             </LineChart>
           </ResponsiveContainer>
         </Card>
@@ -446,7 +457,7 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">Daily steps and tag load</h3>
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} allowDecimals={false} />
@@ -479,13 +490,13 @@ export function OuraCharts({ metrics, averages }) {
           <h3 className="card-title">Day-over-day score change</h3>
           <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData}>
-              <CartesianGrid stroke="rgba(72, 95, 83, 0.12)" />
+              <CartesianGrid stroke="rgba(255, 255, 255, 0.08)" />
               <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Line type="monotone" dataKey="readinessDelta" stroke="#177e72" strokeWidth={3} dot={false} name="Readiness change" />
-              <Line type="monotone" dataKey="sleepDelta" stroke="#d56c47" strokeWidth={3} dot={false} name="Sleep change" />
+              <Line type="monotone" dataKey="readinessDelta" stroke="#177e72" strokeWidth={3} dot={false} name="Readiness delta" />
+              <Line type="monotone" dataKey="sleepDelta" stroke="#d56c47" strokeWidth={3} dot={false} name="Sleep delta" />
             </LineChart>
           </ResponsiveContainer>
         </Card>
