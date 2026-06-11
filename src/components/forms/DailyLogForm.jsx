@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
 import { InputTextarea } from 'primereact/inputtextarea'
@@ -34,7 +34,7 @@ const METRIC_ROWS = [
   ['Burning pain', 'burningPain', '#f87171'],
 ]
 
-const SliderRow = memo(function SliderRow({ label, field, color, value, onChange }) {
+const SliderRow = memo(function SliderRow({ label, color, value, onChange }) {
   const pct = `${((value - 1) / 9) * 100}%`
   return (
     <div className="log-slider-row">
@@ -57,12 +57,10 @@ const SliderRow = memo(function SliderRow({ label, field, color, value, onChange
   )
 })
 
+// The parent remounts this form (via key) when the selected day changes, so
+// state only needs to initialize once from the selected log.
 export function DailyLogForm({ program, activeWeek, activeDay, selectedLog, onSave, saving }) {
-  const [form, setForm] = useState(DEFAULT_FORM)
-
-  useEffect(() => {
-    setForm({ ...DEFAULT_FORM, ...selectedLog })
-  }, [selectedLog])
+  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM, ...selectedLog }))
 
   const logDate = selectedLog?.logDate || deriveLogDate(program, activeWeek, activeDay)
   const patchCycleDay = selectedLog?.patchCycleDay || getPatchCycleDay(program?.patchRenewalDay, logDate)
@@ -102,7 +100,6 @@ export function DailyLogForm({ program, activeWeek, activeDay, selectedLog, onSa
             <SliderRow
               key={field}
               label={label}
-              field={field}
               color={color}
               value={form[field]}
               onChange={handlers[field]}

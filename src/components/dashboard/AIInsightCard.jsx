@@ -6,7 +6,7 @@ import { clearCachedInsight, generateDailyInsight, getCachedInsight, setCachedIn
 
 const STATIC_FALLBACKS = [
   'Listen to your body today — rest and good nutrition go a long way in recovery. Stay consistent with your supplements and keep hydration up.',
-  'Every day on the protocol is progress. Focus on quality sleep tonight and let your body do its repair work.',
+  'Every day of recovery is progress. Focus on quality sleep tonight and let your body do its repair work.',
   'Recovery is built in the quiet days too. Prioritize your routine and check in with how you feel after meals.',
 ]
 

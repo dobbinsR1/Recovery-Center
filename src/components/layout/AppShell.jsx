@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Chip } from 'primereact/chip'
 import { Skeleton } from 'primereact/skeleton'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import recoveryCenterLogo from '../../assets/recovery_center.png'
 import { FullscreenLoader } from '../ui/FullscreenLoader'
 import { getDoseForWeek, getPatchCycleDay, getPhaseForWeek } from '../../lib/date'
@@ -56,6 +56,8 @@ export function AppShell({ children }) {
   const phaseLabel = getPhaseForWeek(snapshot?.program, activeWeek)
   const dose = getDoseForWeek(snapshot?.program, activeWeek)
   const patchDay = snapshot?.program ? getPatchCycleDay(snapshot.program.patchRenewalDay) : 1
+  const activeNavLabel =
+    DESKTOP_NAV_ITEMS.find((item) => location.pathname.startsWith(item.to))?.label ?? 'Overview'
 
   return (
     <div className="app-shell">
@@ -87,8 +89,8 @@ export function AppShell({ children }) {
 
           <div className="support-panel">
             <div className="support-panel-header">
-              <p className="brand-pill">Supabase live</p>
-              <p className="support-copy">Connected to your auth session and recovery tracking tables.</p>
+              <p className="brand-pill">Synced</p>
+              <p className="support-copy">Your entries save securely to your private database.</p>
             </div>
             <div className="support-account-card">
               <div className="support-account-avatar">{displayInitials || 'AD'}</div>
@@ -118,10 +120,7 @@ export function AppShell({ children }) {
                       className="mono"
                     />
                     <Chip label={`Patch day ${patchDay} / 7`} className="mono" />
-                    <Chip
-                      label={location.pathname === '/home' ? 'Dashboard' : location.pathname.slice(1).replace('-', ' ')}
-                      className="mono"
-                    />
+                    <Chip label={activeNavLabel} className="mono" />
                   </>
                 )}
               </div>

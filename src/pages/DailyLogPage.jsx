@@ -34,6 +34,7 @@ export default function DailyLogPage() {
       />
 
       <DailyLogForm
+        key={`${activeWeek}-${activeDay}-${selectedLog?.id ?? 'new'}`}
         program={snapshot.program}
         activeWeek={activeWeek}
         activeDay={activeDay}
@@ -44,10 +45,7 @@ export default function DailyLogPage() {
 
           try {
             await saveLog(draft)
-            showSuccess(
-              'Day log saved',
-              'The daily tracking record was updated in Supabase.',
-            )
+            showSuccess('Day log saved', 'Your daily check-in is saved.')
           } catch (error) {
             showError('Save failed', error.message || 'The daily log could not be updated.')
           } finally {

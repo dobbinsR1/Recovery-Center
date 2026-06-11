@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
 import { Chip } from 'primereact/chip'
@@ -25,18 +25,32 @@ export function NutritionForm({
   activeDay,
   saving,
 }) {
-  const [form, setForm] = useState(DEFAULT_FORM)
+  // The parent remounts this form (via key) when the selected day changes, so
+  // state only needs to initialize once from the selected log.
+  const [form, setForm] = useState(() => ({
+    ...DEFAULT_FORM,
+    ...selectedLog,
+    supplements: [...(selectedLog?.supplements ?? [])],
+  }))
   const [customSupplement, setCustomSupplement] = useState('')
 
-  useEffect(() => {
-    setForm({
-      ...DEFAULT_FORM,
-      ...selectedLog,
-      supplements: [...(selectedLog?.supplements ?? [])],
-    })
-  }, [selectedLog])
-
   const calories = calculateCalories(form)
+
+  const addCustomSupplement = async () => {
+    const trimmed = customSupplement.trim()
+    if (!trimmed) return
+
+    const created = await onCreateSupplement(trimmed)
+    if (!created) return
+
+    setForm((current) => ({
+      ...current,
+      supplements: current.supplements.includes(trimmed)
+        ? current.supplements
+        : [...current.supplements, trimmed],
+    }))
+    setCustomSupplement('')
+  }
 
   return (
     <div className="section-stack">
@@ -153,38 +167,13 @@ export function NutritionForm({
                 value={customSupplement}
                 onChange={(event) => setCustomSupplement(event.target.value)}
                 placeholder="Add a custom supplement"
-                onKeyDown={async (event) => {
-                  if (event.key === 'Enter' && customSupplement.trim()) {
-                    const created = await onCreateSupplement(customSupplement)
-                    if (!created) return
-                    setForm((current) => ({
-                      ...current,
-                      supplements: current.supplements.includes(customSupplement.trim())
-                        ? current.supplements
-                        : [...current.supplements, customSupplement.trim()],
-                    }))
-                    setCustomSupplement('')
-                  }
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') addCustomSupplement()
                 }}
               />
             </span>
 
-            <Button
-              label="Add supplement"
-              outlined
-              onClick={async () => {
-                if (!customSupplement.trim()) return
-                const created = await onCreateSupplement(customSupplement)
-                if (!created) return
-                setForm((current) => ({
-                  ...current,
-                  supplements: current.supplements.includes(customSupplement.trim())
-                    ? current.supplements
-                    : [...current.supplements, customSupplement.trim()],
-                }))
-                setCustomSupplement('')
-              }}
-            />
+            <Button label="Add supplement" outlined onClick={addCustomSupplement} />
           </div>
 
           <div>

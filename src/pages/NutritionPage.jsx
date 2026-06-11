@@ -35,6 +35,7 @@ export default function NutritionPage() {
       />
 
       <NutritionForm
+        key={`${activeWeek}-${activeDay}-${selectedLog?.id ?? 'new'}`}
         selectedLog={selectedLog}
         supplementCatalog={snapshot.supplements}
         activeWeek={activeWeek}
@@ -43,10 +44,7 @@ export default function NutritionPage() {
         onCreateSupplement={async (name) => {
           try {
             await createSupplement(name)
-            showSuccess(
-              'Supplement added',
-              'The supplement catalog was updated in Supabase.',
-            )
+            showSuccess('Supplement added', 'Added to your supplement list.')
             return true
           } catch (error) {
             showError('Could not add supplement', error.message || 'The supplement could not be saved.')
@@ -58,10 +56,7 @@ export default function NutritionPage() {
 
           try {
             await saveLog(draft)
-            showSuccess(
-              'Nutrition saved',
-              'Nutrition and supplements were updated in Supabase.',
-            )
+            showSuccess('Nutrition saved', 'Nutrition and supplements were saved for the day.')
           } catch (error) {
             showError('Save failed', error.message || 'Nutrition could not be updated.')
           } finally {

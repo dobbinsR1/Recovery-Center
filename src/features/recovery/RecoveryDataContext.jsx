@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { average, calculateCalories, getInitialSelection } from '../../lib/date'
 import { addSupplement, loadRecoverySnapshot, saveDailyLog } from './data/recoveryRepository'
 
@@ -76,10 +76,10 @@ export function RecoveryDataProvider({ children, user }) {
     }
   }, [user])
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const nextSnapshot = normalizeSnapshot(await loadRecoverySnapshot(user))
     setSnapshot(nextSnapshot)
-  }
+  }, [user])
 
   const selectedLog = snapshot?.logMap?.[`${activeWeek}_${activeDay}`] ?? null
 
@@ -103,7 +103,7 @@ export function RecoveryDataProvider({ children, user }) {
         await refresh()
       },
     }),
-    [activeDay, activeWeek, error, loading, selectedLog, snapshot, user],
+    [activeDay, activeWeek, error, loading, refresh, selectedLog, snapshot, user],
   )
 
   return <RecoveryDataContext.Provider value={value}>{children}</RecoveryDataContext.Provider>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from 'primereact/button'
 import { Card } from 'primereact/card'
 import { Dropdown } from 'primereact/dropdown'
@@ -20,6 +20,7 @@ import {
 } from 'recharts'
 import { Link } from 'react-router-dom'
 import { formatShortDate } from '../../lib/date'
+import { scoreColor } from '../../lib/health'
 
 function buildChartData(metrics) {
   return [...metrics]
@@ -186,21 +187,21 @@ export function OuraCharts({ metrics, averages }) {
         })),
     [metrics],
   )
-  const [selectedMetricDate, setSelectedMetricDate] = useState(dayOptions[0]?.value ?? null)
+  const [selectedMetricDate, setSelectedMetricDate] = useState(null)
 
-  useEffect(() => {
-    if (!dayOptions.some((option) => option.value === selectedMetricDate)) {
-      setSelectedMetricDate(dayOptions[0]?.value ?? null)
-    }
-  }, [dayOptions, selectedMetricDate])
-
-  const selectedDayMetric =
-    metrics.find((metric) => metric.metricDate === selectedMetricDate) ?? metrics.at(-1)
-  const intradayChartData = buildIntradayChartData(selectedDayMetric)
-  const hasIntraday = hasIntradayData(selectedDayMetric)
   if (!metrics.length) {
     return <EmptyInsightsState />
   }
+
+  // Fall back to the most recent day whenever the stored selection is missing
+  // from the current data set — no sync effect needed.
+  const effectiveMetricDate = dayOptions.some((option) => option.value === selectedMetricDate)
+    ? selectedMetricDate
+    : dayOptions[0]?.value ?? null
+  const selectedDayMetric =
+    metrics.find((metric) => metric.metricDate === effectiveMetricDate) ?? metrics.at(-1)
+  const intradayChartData = buildIntradayChartData(selectedDayMetric)
+  const hasIntraday = hasIntradayData(selectedDayMetric)
 
   const chartData = buildChartData(metrics)
   const flaggedDays = metrics.filter((metric) => metric.tags.length > 0)
@@ -230,11 +231,15 @@ export function OuraCharts({ metrics, averages }) {
         <div className="kpi-grid mt-4">
           <div className="kpi-card">
             <span className="kpi-label">Readiness avg</span>
-            <span className="kpi-value">{averages.readiness ?? '--'}</span>
+            <span className="kpi-value" style={{ color: scoreColor(averages.readiness) }}>
+              {averages.readiness ?? '--'}
+            </span>
           </div>
           <div className="kpi-card">
             <span className="kpi-label">Sleep avg</span>
-            <span className="kpi-value">{averages.sleep ?? '--'}</span>
+            <span className="kpi-value" style={{ color: scoreColor(averages.sleep) }}>
+              {averages.sleep ?? '--'}
+            </span>
           </div>
           <div className="kpi-card">
             <span className="kpi-label">HRV avg</span>
@@ -358,7 +363,7 @@ export function OuraCharts({ metrics, averages }) {
             </p>
           </div>
           <Dropdown
-            value={selectedMetricDate}
+            value={effectiveMetricDate}
             options={dayOptions}
             onChange={(event) => setSelectedMetricDate(event.value)}
             className="oura-day-picker"
@@ -368,11 +373,15 @@ export function OuraCharts({ metrics, averages }) {
         <div className="kpi-grid mt-4">
           <div className="kpi-card">
             <span className="kpi-label">Readiness</span>
-            <span className="kpi-value">{selectedDayMetric?.readinessScore ?? '--'}</span>
+            <span className="kpi-value" style={{ color: scoreColor(selectedDayMetric?.readinessScore) }}>
+              {selectedDayMetric?.readinessScore ?? '--'}
+            </span>
           </div>
           <div className="kpi-card">
             <span className="kpi-label">Sleep score</span>
-            <span className="kpi-value">{selectedDayMetric?.sleepScore ?? '--'}</span>
+            <span className="kpi-value" style={{ color: scoreColor(selectedDayMetric?.sleepScore) }}>
+              {selectedDayMetric?.sleepScore ?? '--'}
+            </span>
           </div>
           <div className="kpi-card">
             <span className="kpi-label">HRV</span>

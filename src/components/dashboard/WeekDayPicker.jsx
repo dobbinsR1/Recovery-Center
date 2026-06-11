@@ -15,8 +15,8 @@ export function WeekDayPicker({
       <div className="page-grid">
         <div className="page-header">
           <div>
-            <h2>Week and day focus</h2>
-            <p className="section-copy">Switch context by protocol week or jump to a specific day entry.</p>
+            <h2>Pick a day</h2>
+            <p className="section-copy">Choose a week and day to view or edit that entry.</p>
           </div>
           <Tag value={getWeekRange(program, activeWeek) || 'Protocol window'} severity="info" />
         </div>

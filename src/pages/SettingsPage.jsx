@@ -19,60 +19,55 @@ function downloadFile(filename, mimeType, content) {
   URL.revokeObjectURL(url)
 }
 
+const DATA_TOOLS = [
+  {
+    name: 'import',
+    label: 'Import historical data',
+    icon: 'pi pi-upload',
+    description:
+      'Brings in the Mar 3 – Apr 6 Oura data and Week 1 symptom logs from the original protocol. Safe to run multiple times.',
+    run: (user) => importHistoricalData(user),
+    describe: (result) =>
+      `Imported ${result.ouraCount} Oura days, ${result.tagCount} tags, and ${result.logCount} symptom logs. Reload the page to see them.`,
+  },
+  {
+    name: 'extend',
+    label: 'Extend to 16 weeks',
+    icon: 'pi pi-plus',
+    description:
+      'Adds weeks 9–16 so you can keep logging past the original window. Existing entries are not touched.',
+    run: (user) => extendProgramTo16Weeks(user),
+    describe: (result) =>
+      result.alreadyExtended
+        ? `Program is already ${result.totalWeeks} weeks long — nothing to add.`
+        : `Added ${result.added} new weeks — total is now ${result.totalWeeks}. Reload the page to see them.`,
+  },
+  {
+    name: 'fix-weeks',
+    label: 'Fix week numbers',
+    icon: 'pi pi-sync',
+    description:
+      "Re-assigns any entries whose week number doesn't match their actual date. Run this if entries appear in the wrong week.",
+    run: (user) => fixWeekNumbers(user),
+    describe: (result) =>
+      result.fixed === 0
+        ? 'All entries are already in the correct week.'
+        : `Moved ${result.fixed} ${result.fixed === 1 ? 'entry' : 'entries'} to the correct week. Reload the page to see the changes.`,
+  },
+]
+
 export default function SettingsPage() {
   const { snapshot, loading } = useRecoveryData()
   const { user } = useAuth()
-  const [importStatus, setImportStatus] = useState('idle')
-  const [importResult, setImportResult] = useState(null)
-  const [importError, setImportError] = useState(null)
+  const [toolStatus, setToolStatus] = useState({ name: null, state: 'idle', message: '' })
 
-  const [fixStatus, setFixStatus] = useState('idle')
-  const [fixResult, setFixResult] = useState(null)
-  const [fixError, setFixError] = useState(null)
-
-  const [extendStatus, setExtendStatus] = useState('idle')
-  const [extendResult, setExtendResult] = useState(null)
-  const [extendError, setExtendError] = useState(null)
-
-  const runImport = async () => {
-    setImportStatus('running')
-    setImportResult(null)
-    setImportError(null)
+  const runTool = async (tool) => {
+    setToolStatus({ name: tool.name, state: 'running', message: '' })
     try {
-      const result = await importHistoricalData(user)
-      setImportResult(result)
-      setImportStatus('done')
+      const result = await tool.run(user)
+      setToolStatus({ name: tool.name, state: 'done', message: tool.describe(result) })
     } catch (err) {
-      setImportError(err.message ?? 'Unknown error')
-      setImportStatus('error')
-    }
-  }
-
-  const runFixWeeks = async () => {
-    setFixStatus('running')
-    setFixResult(null)
-    setFixError(null)
-    try {
-      const result = await fixWeekNumbers(user)
-      setFixResult(result)
-      setFixStatus('done')
-    } catch (err) {
-      setFixError(err.message ?? 'Unknown error')
-      setFixStatus('error')
-    }
-  }
-
-  const runExtend = async () => {
-    setExtendStatus('running')
-    setExtendResult(null)
-    setExtendError(null)
-    try {
-      const result = await extendProgramTo16Weeks(user)
-      setExtendResult(result)
-      setExtendStatus('done')
-    } catch (err) {
-      setExtendError(err.message ?? 'Unknown error')
-      setExtendStatus('error')
+      setToolStatus({ name: tool.name, state: 'error', message: err.message ?? 'Unknown error' })
     }
   }
 
@@ -142,114 +137,62 @@ export default function SettingsPage() {
       <Card>
         <div className="page-header">
           <div>
-            <h2>Settings and handoff</h2>
-            <p className="section-copy">Export recovery data and review the project files behind the live Supabase build.</p>
+            <h2>Settings</h2>
+            <p className="section-copy">Export your data and run one-time maintenance tools.</p>
           </div>
         </div>
       </Card>
 
       <Card>
-        <h3 className="card-title">Import Historical Data</h3>
+        <h3 className="card-title">Exports</h3>
         <div className="section-stack">
           <p className="section-copy">
-            Imports your Mar 3 – Apr 6 Oura data and Week 1 symptom logs from the original protocol,
-            and resets the program start date to March 1, 2026. Safe to run multiple times.
+            Download a full copy of your recovery data — useful for backups or sharing with your
+            care team.
           </p>
-          <Button
-            label={importStatus === 'running' ? 'Importing…' : 'Import historical data'}
-            icon={importStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-upload'}
-            loading={importStatus === 'running'}
-            onClick={runImport}
-          />
-          {importStatus === 'done' && importResult && (
-            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
-              Done — {importResult.ouraCount} Oura days, {importResult.tagCount} tags,{' '}
-              {importResult.logCount} symptom logs imported. Reload the page to see updated data.
-            </p>
-          )}
-          {importStatus === 'error' && (
-            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
-              Error: {importError}
-            </p>
-          )}
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="card-title">Extend Program to 16 Weeks</h3>
-        <div className="section-stack">
-          <p className="section-copy">
-            Adds weeks 9–16 to the tracker so you can keep logging past the original 8-week window.
-            Existing weeks, daily logs, Oura data, and supplements are not touched. Safe to run
-            multiple times.
-          </p>
-          <Button
-            label={extendStatus === 'running' ? 'Extending…' : 'Extend to 16 weeks'}
-            icon={extendStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-plus'}
-            loading={extendStatus === 'running'}
-            onClick={runExtend}
-          />
-          {extendStatus === 'done' && extendResult && (
-            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
-              {extendResult.alreadyExtended
-                ? `Program is already ${extendResult.totalWeeks} weeks long — nothing to add.`
-                : `Done — added ${extendResult.added} new weeks. Total is now ${extendResult.totalWeeks} weeks. Reload the page to see the new week buttons.`}
-            </p>
-          )}
-          {extendStatus === 'error' && (
-            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
-              Error: {extendError}
-            </p>
-          )}
-        </div>
-      </Card>
-
-      <Card>
-        <h3 className="card-title">Fix Week Numbers</h3>
-        <div className="section-stack">
-          <p className="section-copy">
-            Re-assigns any entries whose week number doesn't match their actual date. Run this if
-            entries appear in the wrong week after the historical import.
-          </p>
-          <Button
-            label={fixStatus === 'running' ? 'Fixing…' : 'Fix week numbers'}
-            icon={fixStatus === 'running' ? 'pi pi-spin pi-spinner' : 'pi pi-sync'}
-            loading={fixStatus === 'running'}
-            onClick={runFixWeeks}
-          />
-          {fixStatus === 'done' && fixResult && (
-            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
-              Done — {fixResult.fixed} {fixResult.fixed === 1 ? 'entry' : 'entries'} moved to the
-              correct week. Reload the page to see the changes.
-            </p>
-          )}
-          {fixStatus === 'error' && (
-            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
-              Error: {fixError}
-            </p>
-          )}
-        </div>
-      </Card>
-
-      <div className="grid-two">
-        <Card>
-          <h3 className="card-title">Exports</h3>
-          <div className="section-stack">
+          <div className="grid-two">
             <Button label="Export JSON snapshot" icon="pi pi-download" onClick={exportJson} />
             <Button label="Export CSV logs" icon="pi pi-file-export" outlined onClick={exportCsv} />
           </div>
-        </Card>
+        </div>
+      </Card>
 
-        <Card>
-          <h3 className="card-title">Project files</h3>
-          <div className="section-stack">
-            <p className="footer-note">Schema: <code>supabase/schema.sql</code></p>
-            <p className="footer-note">Seed data: <code>supabase/seed.sql</code></p>
-            <p className="footer-note">Discovery: <code>docs/recovery-center-discovery.md</code></p>
-            <p className="footer-note">Build plan: <code>docs/recovery-center-build-plan.md</code></p>
-          </div>
-        </Card>
-      </div>
+      <Card>
+        <h3 className="card-title">Data tools</h3>
+        <div className="section-stack">
+          {DATA_TOOLS.map((tool) => (
+            <div key={tool.name} className="metric-line">
+              <div>
+                <strong>{tool.label}</strong>
+                <p className="section-copy">{tool.description}</p>
+              </div>
+              <Button
+                label={toolStatus.name === tool.name && toolStatus.state === 'running' ? 'Running…' : 'Run'}
+                icon={
+                  toolStatus.name === tool.name && toolStatus.state === 'running'
+                    ? 'pi pi-spin pi-spinner'
+                    : tool.icon
+                }
+                outlined
+                loading={toolStatus.name === tool.name && toolStatus.state === 'running'}
+                disabled={toolStatus.state === 'running' && toolStatus.name !== tool.name}
+                onClick={() => runTool(tool)}
+              />
+            </div>
+          ))}
+
+          {toolStatus.state === 'done' ? (
+            <p className="section-copy" style={{ color: 'var(--green-500)' }}>
+              {toolStatus.message}
+            </p>
+          ) : null}
+          {toolStatus.state === 'error' ? (
+            <p className="section-copy" style={{ color: 'var(--red-500)' }}>
+              Error: {toolStatus.message}
+            </p>
+          ) : null}
+        </div>
+      </Card>
     </div>
   )
 }

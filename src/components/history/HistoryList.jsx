@@ -3,9 +3,9 @@ import { Column } from 'primereact/column'
 import { DataTable } from 'primereact/datatable'
 import { Tag } from 'primereact/tag'
 import { DAYS, formatShortDate } from '../../lib/date'
+import { painAverage, scoreColor } from '../../lib/health'
 
 function historyRow(log) {
-  const pain = Math.round((log.jointPain + log.nervePain) / 2)
   const neuro = Math.round(
     (log.tinglingNumbness + log.brainFog + log.fatigue + log.muscleWeakness + log.burningPain) / 5,
   )
@@ -13,13 +13,13 @@ function historyRow(log) {
   return {
     ...log,
     dayLabel: `${DAYS[log.dayOfWeek]} • Week ${log.weekNumber}`,
-    pain,
+    pain: painAverage(log),
     neuro,
   }
 }
 
 export function HistoryList({ logs }) {
-  const rows = logs.map(historyRow).slice().reverse()
+  const rows = logs.map(historyRow).reverse()
   const latestRow = rows[0] ?? null
 
   return (
@@ -79,7 +79,16 @@ export function HistoryList({ logs }) {
           <Column field="neuro" header="Neuro" />
           <Column field="energy" header="Energy" />
           <Column field="sleepQuality" header="Sleep" />
-          <Column field="ouraReadiness" header="Oura" />
+          <Column
+            header="Oura"
+            body={(row) =>
+              row.ouraReadiness != null ? (
+                <span style={{ color: scoreColor(row.ouraReadiness) }}>{row.ouraReadiness}</span>
+              ) : (
+                '--'
+              )
+            }
+          />
           <Column header="Alcohol" body={(row) => (row.alcoholUsed ? 'Yes' : 'No')} />
         </DataTable>
       </Card>

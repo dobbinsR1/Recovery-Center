@@ -26,4 +26,12 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  {
+    // Context modules intentionally export a provider component plus its hook.
+    // That only limits dev-server hot-reload granularity, so allow it there.
+    files: ['**/features/**/*Context.jsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
